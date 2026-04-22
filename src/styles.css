@@ -2,6 +2,8 @@
 @source "../src";
 @import "tw-animate-css";
 
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap");
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -63,25 +65,44 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  /* Maluku heroes — maroon + brown + beige */
+  --background: oklch(0.16 0.04 35);
+  --foreground: oklch(0.94 0.03 75);
+  --card: oklch(0.22 0.05 35);
+  --card-foreground: oklch(0.94 0.03 75);
+  --popover: oklch(0.22 0.05 35);
+  --popover-foreground: oklch(0.94 0.03 75);
+  --primary: oklch(0.45 0.18 25);
+  --primary-foreground: oklch(0.96 0.03 80);
+  --secondary: oklch(0.32 0.05 45);
+  --secondary-foreground: oklch(0.94 0.03 75);
+  --muted: oklch(0.26 0.04 40);
+  --muted-foreground: oklch(0.78 0.04 70);
+  --accent: oklch(0.78 0.12 70);
+  --accent-foreground: oklch(0.18 0.04 35);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.96 0.03 80);
+  --border: oklch(0.35 0.05 40 / 60%);
+  --input: oklch(0.3 0.04 40);
+  --ring: oklch(0.55 0.18 30);
+
+  --maroon: oklch(0.35 0.16 25);
+  --maroon-deep: oklch(0.22 0.12 25);
+  --brown: oklch(0.32 0.06 45);
+  --brown-deep: oklch(0.2 0.04 40);
+  --beige: oklch(0.92 0.04 80);
+  --gold: oklch(0.78 0.14 75);
+
+  --gradient-hero: linear-gradient(135deg, oklch(0.22 0.12 25) 0%, oklch(0.18 0.05 40) 100%);
+  --gradient-maroon: linear-gradient(135deg, var(--maroon) 0%, var(--brown-deep) 100%);
+  --gradient-gold: linear-gradient(135deg, var(--gold) 0%, oklch(0.62 0.16 55) 100%);
+
+  --shadow-classic: 0 20px 50px -20px oklch(0.1 0.05 25 / 0.7);
+  --shadow-glow: 0 0 60px oklch(0.45 0.18 25 / 0.45);
+
+  --font-serif: "Cinzel", "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
