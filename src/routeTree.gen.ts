@@ -9,9 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PattimuraRouteImport } from './routes/pattimura'
+import { Route as MarthaRouteImport } from './routes/martha'
 import { Route as KuisRouteImport } from './routes/kuis'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PattimuraRoute = PattimuraRouteImport.update({
+  id: '/pattimura',
+  path: '/pattimura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarthaRoute = MarthaRouteImport.update({
+  id: '/martha',
+  path: '/martha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KuisRoute = KuisRouteImport.update({
   id: '/kuis',
   path: '/kuis',
@@ -26,31 +38,53 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kuis': typeof KuisRoute
+  '/martha': typeof MarthaRoute
+  '/pattimura': typeof PattimuraRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/kuis': typeof KuisRoute
+  '/martha': typeof MarthaRoute
+  '/pattimura': typeof PattimuraRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/kuis': typeof KuisRoute
+  '/martha': typeof MarthaRoute
+  '/pattimura': typeof PattimuraRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/kuis'
+  fullPaths: '/' | '/kuis' | '/martha' | '/pattimura'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/kuis'
-  id: '__root__' | '/' | '/kuis'
+  to: '/' | '/kuis' | '/martha' | '/pattimura'
+  id: '__root__' | '/' | '/kuis' | '/martha' | '/pattimura'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KuisRoute: typeof KuisRoute
+  MarthaRoute: typeof MarthaRoute
+  PattimuraRoute: typeof PattimuraRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pattimura': {
+      id: '/pattimura'
+      path: '/pattimura'
+      fullPath: '/pattimura'
+      preLoaderRoute: typeof PattimuraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/martha': {
+      id: '/martha'
+      path: '/martha'
+      fullPath: '/martha'
+      preLoaderRoute: typeof MarthaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kuis': {
       id: '/kuis'
       path: '/kuis'
@@ -71,6 +105,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KuisRoute: KuisRoute,
+  MarthaRoute: MarthaRoute,
+  PattimuraRoute: PattimuraRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
