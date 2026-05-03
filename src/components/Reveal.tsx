@@ -9,11 +9,16 @@ type Props = {
 
 export function Reveal({ children, direction = "up", delay = 0, className = "" }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    setVisible(false);
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -21,10 +26,15 @@ export function Reveal({ children, direction = "up", delay = 0, className = "" }
           obs.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.05, rootMargin: "0px 0px -10% 0px" }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    // Safety: ensure content becomes visible even if observer never fires
+    const fallback = setTimeout(() => setVisible(true), 1500 + delay);
+    return () => {
+      obs.disconnect();
+      clearTimeout(fallback);
+    };
   }, [delay]);
 
   const dirClass =
