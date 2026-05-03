@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/SiteHeader";
-import { SaparuaGame } from "@/components/SaparuaGame";
+import { PattimuraQuest } from "@/components/PattimuraQuest";
 import battleScene from "@/assets/battle-scene.jpg";
 
 export const Route = createFileRoute("/kuis")({
@@ -47,7 +47,7 @@ function KuisPage() {
         </div>
       </section>
 
-      <SaparuaGame />
+      <PattimuraQuest />
 
       <section className="py-12 px-6 text-center">
         <Link
