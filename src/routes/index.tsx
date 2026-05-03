@@ -60,8 +60,22 @@ const gallery = [
 
 function Index() {
   const [scrollY, setScrollY] = useState(0);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const [timelineProgress, setTimelineProgress] = useState(0);
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
+    const onScroll = () => {
+      setScrollY(window.scrollY);
+      const el = timelineRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const wh = window.innerHeight;
+        const total = rect.height + wh * 0.6;
+        const scrolled = wh - rect.top;
+        const p = Math.max(0, Math.min(100, (scrolled / total) * 130));
+        setTimelineProgress(p);
+      }
+    };
+    onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -185,8 +199,28 @@ function Index() {
             </div>
           </Reveal>
 
-          <div className="relative">
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-gold/50 to-transparent -translate-x-1/2" />
+          <div className="relative" ref={timelineRef}>
+            {/* Track */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-[3px] -translate-x-1/2 bg-gold/15 rounded-full" />
+            {/* Animated fill */}
+            <div
+              className="absolute left-1/2 top-0 w-[3px] -translate-x-1/2 rounded-full overflow-visible"
+              style={{
+                height: `${timelineProgress}%`,
+                background: "linear-gradient(to bottom, transparent, oklch(0.78 0.14 75) 10%, oklch(0.88 0.16 80) 50%, oklch(0.78 0.14 75) 90%, transparent)",
+                transition: "height 0.4s cubic-bezier(0.25,0.46,0.45,0.94)",
+                boxShadow: "0 0 20px oklch(0.78 0.14 75 / 0.6)",
+              }}
+            >
+              {/* Glow at tip */}
+              <div
+                className="absolute -left-2 -bottom-6 w-[18px] h-[40px] rounded-full pointer-events-none animate-pulse"
+                style={{
+                  background: "radial-gradient(ellipse at center, oklch(0.92 0.16 80 / 0.9) 0%, oklch(0.78 0.14 75 / 0.4) 40%, transparent 70%)",
+                  filter: "blur(2px)",
+                }}
+              />
+            </div>
             <div className="space-y-16">
               {timeline.map((t, i) => {
                 const left = i % 2 === 0;
@@ -200,7 +234,7 @@ function Index() {
                           <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{t.desc}</p>
                         </div>
                       </div>
-                      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-gradient-gold border-4 border-background shadow-glow" />
+                      <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-gradient-gold border-4 border-background shadow-glow z-10 animate-pulse" />
                     </div>
                   </Reveal>
                 );
