@@ -32,14 +32,14 @@ const heroes = [
     title: "Kapitan Pattimura",
     born: "1783, Haria, Saparua",
     img: pattimuraImg,
-    bio: "Pemimpin perlawanan rakyat Maluku tahun 1817 melawan VOC dan kolonial Belanda. Ia menyatukan rakyat Saparua dalam pertempuran besar di Benteng Duurstede.",
+    bio: "Lahir di desa Haria, Pulau Saparua, dengan nama Thomas Matulessy. Sebelum menjadi pemimpin perlawanan, ia bertugas sebagai sersan dalam dinas militer Inggris di Ambon. Ketika Belanda kembali berkuasa pada 1817 dengan kebijakan pajak berat, kerja paksa, dan monopoli rempah, Thomas dipilih rakyat Saparua sebagai Kapitan Besar. Ia memimpin penyerbuan Benteng Duurstede, memenangkan beberapa pertempuran besar, dan menolak tegas semua tawaran pengampunan dari Belanda. Gugur di tiang gantungan pada 16 Desember 1817 dengan kepala tetap tegak.",
   },
   {
     name: "Martha Christina Tiahahu",
     title: "Srikandi Maluku",
     born: "4 Januari 1800, Nusalaut",
     img: marthaImg,
-    bio: "Pejuang perempuan muda yang ikut bertempur bersama ayahnya, Kapitan Paulus Tiahahu, dan pasukan Pattimura. Wafat di laut Banda dalam usia 18 tahun.",
+    bio: "Lahir di desa Abubu, Pulau Nusalaut, sebagai putri Kapitan Paulus Tiahahu. Sejak kecil ia ikut ayahnya dalam rapat-rapat strategi adat. Pada usia 17 tahun, ia memakai ikat kepala merah, mengangkat tombak, dan memimpin perempuan-perempuan Nusalaut bertempur bersama pasukan Pattimura — termasuk dalam penyerbuan benteng Beverwijk. Setelah ayahnya dihukum mati, Martha ditangkap dan dibuang ke Jawa. Di atas kapal Eversten ia memilih mogok makan, menolak obat, dan wafat di Laut Banda pada 2 Januari 1818 dalam usia 18 tahun.",
   },
 ];
 

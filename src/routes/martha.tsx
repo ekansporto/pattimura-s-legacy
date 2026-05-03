@@ -34,23 +34,35 @@ const facts = [
 const events = [
   {
     t: "Masa Kecil di Nusalaut",
-    d: "Lahir di desa Abubu, Pulau Nusalaut. Sejak kecil ia ikut ayahnya, Kapitan Paulus Tiahahu, dalam berbagai pertemuan adat dan rapat-rapat strategi.",
+    d: "Martha Christina Tiahahu lahir 4 Januari 1800 di desa Abubu, Pulau Nusalaut. Ibunya wafat saat Martha masih kecil, sehingga ia tumbuh sangat dekat dengan ayahnya, Kapitan Paulus Tiahahu. Sejak kecil ia ikut ayahnya dalam pertemuan adat dan rapat strategi para kapitan. Ia tidak suka memakai pakaian wanita biasa — lebih sering mengenakan pakaian seperti laki-laki dan ikat kepala merah khas pejuang Maluku.",
+  },
+  {
+    t: "Tumbuh Bersama Semangat Perlawanan",
+    d: "Sejak remaja, Martha sudah ahli memainkan tombak dan parang. Ia mengikuti kursus perang dari para kapitan tua, menguasai taktik bertahan di medan berbukit, dan memahami pentingnya pela-gandong sebagai kekuatan pemersatu antarkampung di Maluku.",
   },
   {
     t: "Bergabung dengan Pattimura",
-    d: "Saat berusia 17 tahun, Martha bergabung dengan pasukan Pattimura. Ia memakai ikat kepala merah, membawa tombak, dan ikut bertempur layaknya pejuang dewasa.",
+    d: "Ketika perlawanan rakyat Saparua meletus Mei 1817, Martha yang baru berusia 17 tahun langsung bergabung dengan pasukan Pattimura. Ia ikut menyebarkan kabar penyerbuan ke seluruh Nusalaut, dan menjadi salah satu sosok perempuan pertama yang berdiri di garis depan pertempuran melawan tentara kolonial.",
   },
   {
     t: "Pertempuran di Nusalaut",
-    d: "Memimpin perempuan-perempuan Nusalaut untuk membantu pasukan dengan mengangkut amunisi, batu, dan air panas. Ia juga ikut maju di garis depan menyerang benteng Belanda di Beverwijk.",
+    d: "Martha memimpin perempuan-perempuan Nusalaut mengangkut amunisi, batu panas, dan air mendidih ke atas benteng. Tak hanya itu, ia juga ikut menyerbu benteng Belanda di Beverwijk dengan tombak di tangan. Keberaniannya membuat pasukan Belanda terpaksa mengakui bahwa ada 'gadis pemberontak' yang sebanding dengan para kapitan dewasa.",
+  },
+  {
+    t: "Tertangkap Bersama Sang Ayah",
+    d: "Setelah perlawanan mulai melemah karena bantuan Belanda yang besar dari Ambon dan Jawa, ayahnya, Kapitan Paulus Tiahahu, ditangkap dan dijatuhi hukuman mati di benteng Beverwijk pada Oktober 1817. Martha menyaksikan eksekusi sang ayah dengan tegar — kemudian ia sendiri ditangkap bersama 39 pejuang lain.",
   },
   {
     t: "Penangkapan",
-    d: "Setelah ayahnya, Kapitan Paulus, dijatuhi hukuman mati, Martha ditahan dan dibawa ke Pulau Jawa untuk dijadikan kerja paksa di perkebunan kopi.",
+    d: "Karena masih di bawah umur, Martha tidak dijatuhi hukuman mati. Sebagai gantinya, ia akan dibuang ke Pulau Jawa dan dipekerjakan paksa di perkebunan kopi milik Belanda. Ia dinaikkan ke kapal perang Eversten bersama tahanan-tahanan lain pada penghujung Desember 1817.",
   },
   {
     t: "Mogok Makan & Wafat",
-    d: "Di atas kapal Eversten yang membawanya ke Jawa, Martha menolak makan, menolak obat, dan menolak segala bentuk kerjasama dengan Belanda. Ia wafat 2 Januari 1818 di Laut Banda. Jenazahnya dilarung ke laut dengan upacara militer.",
+    d: "Di atas kapal Eversten, Martha menolak makan, menolak obat, dan menolak semua bentuk kerjasama dengan Belanda. Tubuhnya semakin lemah, namun semangatnya tak pernah pudar. Pada 2 Januari 1818, dua hari sebelum ulang tahunnya yang ke-18, Martha wafat di Laut Banda. Jenazahnya dilarung ke laut dengan upacara militer — laut Banda menjadi makam abadinya.",
+  },
+  {
+    t: "Warisan & Pengakuan",
+    d: "Pemerintah Indonesia menganugerahkan gelar Pahlawan Nasional kepada Martha Christina Tiahahu pada 20 Mei 1969. Tanggal kematiannya, 2 Januari, diperingati sebagai Hari Martha Christina Tiahahu di Maluku. Patungnya berdiri tegak di Karang Panjang, Ambon — sosok gadis muda mengangkat tombak, menatap ke arah Laut Banda.",
   },
 ];
 
