@@ -34,23 +34,35 @@ const facts = [
 const events = [
   {
     t: "Latar Belakang",
-    d: "Sebelum memimpin, Thomas Matulessy sempat menjadi sersan dalam dinas militer Inggris di Ambon. Pengalaman militer ini menjadi modal penting saat memimpin perlawanan.",
+    d: "Thomas Matulessy lahir 8 Juni 1783 di desa Haria, Saparua, dari keluarga Matulessia (Matulessy). Ia tumbuh dalam tradisi pela-gandong yang menanamkan nilai persaudaraan antar kampung. Sebelum memimpin perlawanan, Thomas sempat menjadi sersan dalam dinas militer Inggris di Ambon — pengalaman yang membentuknya menjadi taktikus berdisiplin tinggi dan memahami sistem persenjataan Eropa.",
+  },
+  {
+    t: "Penyebab Perlawanan",
+    d: "Pada 1817, Belanda kembali berkuasa di Maluku setelah masa Inggris. Mereka memberlakukan pajak berat, monopoli cengkeh dan pala, kerja paksa di hutan, kewajiban menyerahkan ikan asin, serta pengurangan jumlah pendeta pribumi. Penindasan ini memuncak hingga rakyat Saparua bersepakat: cukup sudah tunduk pada penjajah.",
   },
   {
     t: "Diangkat Jadi Kapitan Besar",
-    d: "Pada Mei 1817, rakyat Saparua bersepakat mengangkat Thomas Matulessy menjadi Kapitan Besar untuk memimpin perlawanan terhadap kekejaman Belanda yang menindas dengan pajak dan kerja paksa.",
+    d: "Pada 14 Mei 1817 dalam pertemuan rahasia di hutan Pelawi, rakyat Saparua bersepakat mengangkat Thomas Matulessy sebagai Kapitan Besar. Para kapitan dari berbagai negeri bersumpah setia. Dua hari kemudian, Proklamasi Haria dibacakan — sebuah daftar 14 keluhan rakyat sekaligus pernyataan perlawanan terhadap kekuasaan kolonial.",
   },
   {
     t: "Penyerbuan Benteng Duurstede",
-    d: "16 Mei 1817 — pasukan Pattimura merebut Benteng Duurstede dan menewaskan Residen Van den Berg beserta keluarganya. Kemenangan ini membakar semangat perlawanan di seluruh Maluku.",
+    d: "16 Mei 1817 — fajar belum sepenuhnya terang ketika pasukan Pattimura yang dipersenjatai parang Salawaku menyerbu Benteng Duurstede. Setelah pertempuran sengit, benteng kolonial itu jatuh. Residen Van den Berg beserta keluarganya tewas, kecuali putra bungsunya yang diselamatkan. Kemenangan ini membakar semangat perlawanan di Haruku, Nusalaut, hingga Seram.",
+  },
+  {
+    t: "Pertempuran Lanjutan",
+    d: "Pasukan Pattimura beberapa kali memukul mundur ekspedisi Belanda yang dikirim dari Ambon. Pertempuran besar di Waisisil dan penyergapan di hutan-hutan Saparua menunjukkan kelihaian taktik gerilyanya. Belanda terpaksa mendatangkan bala bantuan dari Jawa dan menggunakan pengkhianat lokal untuk membongkar persembunyiannya.",
   },
   {
     t: "Pengkhianatan & Penangkapan",
-    d: "Setelah berbulan-bulan bertahan, Pattimura tertangkap pada 11 November 1817 akibat pengkhianatan. Belanda menawarkan pengampunan asalkan ia mau bekerjasama — Pattimura menolak tegas.",
+    d: "Setelah enam bulan perlawanan tanpa henti, Pattimura akhirnya tertangkap pada 11 November 1817 di sebuah rumah di Siri Sori akibat pengkhianatan Raja Booi. Belanda berkali-kali menawarkan pengampunan, jabatan, dan kekayaan asalkan ia mau bekerjasama — semua ditolaknya tegas. 'Pekerjaanku sudah selesai,' katanya kepada para penangkapnya.",
   },
   {
     t: "Hukuman Gantung",
     d: "Pada 16 Desember 1817, Pattimura dihukum gantung di depan Benteng Victoria, Ambon. Sebelum wafat ia berkata: 'Pattimura-pattimura tua boleh dihancurkan, tapi Pattimura-pattimura muda akan bangkit.'",
+  },
+  {
+    t: "Warisan",
+    d: "Pemerintah Republik Indonesia menetapkan Pattimura sebagai Pahlawan Nasional pada 6 November 1973. Wajahnya diabadikan pada uang kertas pecahan Rp1.000, namanya digunakan untuk universitas, bandara, jalan, dan kapal perang TNI. Setiap 15 Mei diperingati sebagai Hari Pattimura di Maluku.",
   },
 ];
 
