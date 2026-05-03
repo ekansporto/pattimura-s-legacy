@@ -1,185 +1,267 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
-import heroBg from "@/assets/hero-bg.jpg";
-import battleImg from "@/assets/battle.jpg";
-import pattimuraImg from "@/assets/pattimura.jpg";
-import marthaImg from "@/assets/martha.jpg";
+import battleScene from "@/assets/battle-scene.jpg";
 
 export const Route = createFileRoute("/kuis")({
   head: () => ({
     meta: [
-      { title: "Pertempuran Benteng Duurstede — Mini Game Pahlawan Maluku" },
+      { title: "Pertempuran Benteng Duurstede — Game Naratif Pahlawan Maluku" },
       {
         name: "description",
         content:
-          "Mini game pertempuran: jawab pertanyaan sejarah untuk menyerang benteng kolonial Belanda bersama Pattimura & Martha.",
+          "Game pilihan naratif gaya RPG: pimpin Kapitan Pattimura mempertahankan Benteng Duurstede pada tahun 1817.",
       },
       { property: "og:title", content: "Pertempuran Benteng Duurstede" },
-      { property: "og:description", content: "Mini game perlawanan rakyat Maluku 1817." },
-      { property: "og:image", content: battleImg },
-      { name: "twitter:image", content: battleImg },
+      { property: "og:description", content: "Game naratif perlawanan rakyat Maluku 1817." },
+      { property: "og:image", content: battleScene },
+      { name: "twitter:image", content: battleScene },
     ],
   }),
   component: KuisPage,
 });
 
-type Q = { q: string; opts: string[]; a: number; explain: string };
+type Choice = {
+  label: string;
+  text: string;
+  variant: "red" | "gold";
+  // consequence
+  good: boolean;
+  hpEnemy?: number; // damage to enemy
+  hpSelf?: number; // damage to self
+  result: string; // narration after choice
+};
 
-const QUESTIONS: Q[] = [
+type Scene = {
+  id: number;
+  narration: string;
+  prompt?: string;
+  choices: [Choice, Choice];
+};
+
+const SCENES: Scene[] = [
   {
-    q: "Siapa nama asli Kapitan Pattimura?",
-    opts: ["Thomas Matulessy", "Paulus Tiahahu", "Sultan Nuku", "Antonie Rhebok"],
-    a: 0,
-    explain: "Pattimura adalah gelar untuk Thomas Matulessy.",
+    id: 1,
+    narration:
+      "Sersan, Benteng Duurstede terkepung sepenuhnya. Kapal-kapal Belanda di teluk bersiap menembakkan meriam, sementara pasukan infantri musuh mulai mendaki dinding. Kita kehabisan peluru.",
+    prompt: "APA PERINTAHMU, KAPITAN?",
+    choices: [
+      {
+        label: "A",
+        text: "BERTAHAN DI DINDING BENTENG SEKUAT TENAGA.",
+        variant: "red",
+        good: false,
+        hpSelf: 25,
+        hpEnemy: 10,
+        result:
+          "Pasukanmu bertahan gigih, tapi meriam Belanda meluluhlantakkan dinding utara. Banyak prajurit gugur sebelum sempat melawan.",
+      },
+      {
+        label: "B",
+        text: "SERANGAN BALIK MENYELURUH DAN REBUT SENJATA MEREKA!",
+        variant: "gold",
+        good: true,
+        hpEnemy: 30,
+        hpSelf: 10,
+        result:
+          "Dengan teriakan 'Mena Muria!', pasukanmu menerjang turun. Senjata musuh berpindah tangan, garis depan Belanda kacau balau.",
+      },
+    ],
   },
   {
-    q: "Tahun berapa perlawanan besar rakyat Maluku?",
-    opts: ["1815", "1817", "1825", "1908"],
-    a: 1,
-    explain: "Perlawanan dimulai Mei 1817 di Saparua.",
+    id: 2,
+    narration:
+      "Malam tiba. Residen Van den Berg tertangkap di dalam benteng. Beberapa serdadu Belanda menyerah, sebagian lain bersembunyi di gudang mesiu — siap meledakkan diri.",
+    prompt: "APA TINDAKANMU, KAPITAN?",
+    choices: [
+      {
+        label: "A",
+        text: "BAKAR GUDANG MESIU DARI LUAR — JANGAN BERI MEREKA KESEMPATAN.",
+        variant: "red",
+        good: false,
+        hpSelf: 20,
+        hpEnemy: 5,
+        result:
+          "Ledakan dahsyat mengguncang benteng. Musuh musnah, namun sebagian dinding selatan ikut runtuh dan melukai pasukanmu.",
+      },
+      {
+        label: "B",
+        text: "KIRIM UTUSAN — TAWARKAN MENYERAH DENGAN KEHORMATAN.",
+        variant: "gold",
+        good: true,
+        hpEnemy: 25,
+        hpSelf: 0,
+        result:
+          "Mereka menyerah. Senjata, mesiu, dan benteng kini sepenuhnya milik rakyat Maluku. Kemenangan tanpa korban tambahan.",
+      },
+    ],
   },
   {
-    q: "Benteng kolonial yang direbut Pattimura?",
-    opts: ["Victoria", "Duurstede", "Rotterdam", "Vredeburg"],
-    a: 1,
-    explain: "Benteng Duurstede di Saparua direbut 16 Mei 1817.",
+    id: 3,
+    narration:
+      "Berita kemenangan menyebar. Namun mata-mata melaporkan armada bantuan Belanda dari Ambon akan tiba dalam dua hari. Beberapa kapitan ragu melanjutkan perlawanan.",
+    prompt: "BAGAIMANA KAU SATUKAN MEREKA?",
+    choices: [
+      {
+        label: "A",
+        text: "PAKSA MEREKA TUNDUK DENGAN ANCAMAN.",
+        variant: "red",
+        good: false,
+        hpSelf: 15,
+        hpEnemy: 0,
+        result:
+          "Kepercayaan retak. Beberapa pasukan diam-diam mundur ke kampung halaman. Semangatmu mulai goyah.",
+      },
+      {
+        label: "B",
+        text: "KUMPULKAN MEREKA DAN BACAKAN PROKLAMASI HARIA.",
+        variant: "gold",
+        good: true,
+        hpEnemy: 20,
+        hpSelf: 0,
+        result:
+          "Kata-katamu menggetarkan dada para kapitan. Mereka bersumpah berjuang sampai titik darah penghabisan. Martha Christina pun mengangkat tombak di sampingmu.",
+      },
+    ],
   },
   {
-    q: "Di usia berapa Martha Christina Tiahahu wafat?",
-    opts: ["15 tahun", "18 tahun", "21 tahun", "25 tahun"],
-    a: 1,
-    explain: "Martha wafat di Laut Banda, 2 Januari 1818.",
+    id: 4,
+    narration:
+      "Armada Belanda tiba lebih cepat dari dugaan. Kapal-kapal mengepung pantai Saparua. Pasukan musuh mendarat dengan jumlah berlipat.",
+    prompt: "STRATEGI APA YANG KAU PILIH?",
+    choices: [
+      {
+        label: "A",
+        text: "HADANG MEREKA DI PANTAI DENGAN SELURUH KEKUATAN.",
+        variant: "red",
+        good: false,
+        hpSelf: 30,
+        hpEnemy: 15,
+        result:
+          "Pertempuran terbuka di pasir. Korban berjatuhan, dan pasukan kita kalah jumlah. Tapi nama Pattimura makin ditakuti.",
+      },
+      {
+        label: "B",
+        text: "GUNAKAN HUTAN — PERANG GERILYA DARI BUKIT.",
+        variant: "gold",
+        good: true,
+        hpEnemy: 30,
+        hpSelf: 5,
+        result:
+          "Dari rimbun pepohonan, parang Salawaku berkilat. Patroli Belanda lenyap satu per satu sebelum sempat melapor.",
+      },
+    ],
   },
   {
-    q: "Bagaimana Pattimura gugur?",
-    opts: ["Tewas di medan", "Dihukum gantung", "Tenggelam", "Sakit"],
-    a: 1,
-    explain: "Dihukum gantung 16 Desember 1817 di Benteng Victoria.",
-  },
-  {
-    q: "Asal pulau Martha Christina Tiahahu?",
-    opts: ["Saparua", "Nusalaut", "Ambon", "Banda"],
-    a: 1,
-    explain: "Martha lahir di Abubu, Pulau Nusalaut.",
-  },
-  {
-    q: "Senjata khas Maluku yang digunakan pasukan Pattimura?",
-    opts: ["Rencong", "Keris", "Parang Salawaku", "Mandau"],
-    a: 2,
-    explain: "Parang Salawaku — pedang & perisai khas Maluku.",
-  },
-  {
-    q: "Siapa ayah Martha Christina Tiahahu?",
-    opts: ["Anthony Rhebok", "Paulus Tiahahu", "Said Perintah", "Lukas Selano"],
-    a: 1,
-    explain: "Kapitan Paulus Tiahahu, juga seorang pejuang.",
+    id: 5,
+    narration:
+      "Pengkhianat dari kalangan sendiri membocorkan markasmu. Belanda mengepung. Mereka menawarkan pengampunan jika kau menyerah hidup-hidup.",
+    prompt: "APA JAWABANMU, KAPITAN?",
+    choices: [
+      {
+        label: "A",
+        text: "MENYERAH — SELAMATKAN NYAWA YANG TERSISA.",
+        variant: "red",
+        good: false,
+        hpSelf: 25,
+        hpEnemy: 0,
+        result:
+          "Kau ditangkap dan dibawa ke Ambon. Namun kepalamu tetap tegak — dan dunia mengingat: Pattimura tak pernah memohon ampun.",
+      },
+      {
+        label: "B",
+        text: "“LEBIH BAIK MATI BERKALANG TANAH DARIPADA HIDUP DIJAJAH!”",
+        variant: "gold",
+        good: true,
+        hpEnemy: 40,
+        hpSelf: 20,
+        result:
+          "Kau bertempur sampai napas terakhir orang-orangmu. Walau akhirnya tertangkap, semangat 1817 menyala abadi di setiap dada anak Maluku.",
+      },
+    ],
   },
 ];
 
-const KEY = "kuis-maluku-best";
+const KEY = "pattimura-rpg-best";
 const MAX_HP = 100;
-const PLAYER_DMG = 25; // 4 benar = menang
-const ENEMY_DMG = 20; // 5 salah = kalah
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function KuisPage() {
   const [started, setStarted] = useState(false);
-  const [hero, setHero] = useState<"pattimura" | "martha">("pattimura");
-
-  const [deck, setDeck] = useState<Q[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null);
-
-  const [enemyHp, setEnemyHp] = useState(MAX_HP);
+  const [sceneIdx, setSceneIdx] = useState(0);
   const [playerHp, setPlayerHp] = useState(MAX_HP);
-
-  const [shake, setShake] = useState(false);
-  const [hit, setHit] = useState<"enemy" | "player" | null>(null);
-  const [floatTxt, setFloatTxt] = useState<{ side: "enemy" | "player"; v: string; key: number } | null>(null);
-
-  const [done, setDone] = useState<null | "win" | "lose">(null);
-  const [streak, setStreak] = useState(0);
+  const [enemyHp, setEnemyHp] = useState(MAX_HP);
   const [score, setScore] = useState(0);
+  const [phase, setPhase] = useState<"narration" | "choice" | "result" | "end">("narration");
+  const [lastChoice, setLastChoice] = useState<Choice | null>(null);
+  const [shake, setShake] = useState(false);
+  const [floatTxt, setFloatTxt] = useState<{ side: "enemy" | "player"; v: string; key: number } | null>(null);
   const [best, setBest] = useState(0);
+  const [ending, setEnding] = useState<null | "victory" | "heroic" | "defeat">(null);
 
   useEffect(() => {
     setBest(Number(localStorage.getItem(KEY) || "0"));
   }, []);
 
-  const heroImg = hero === "pattimura" ? pattimuraImg : marthaImg;
-  const heroName = hero === "pattimura" ? "Kapitan Pattimura" : "Martha Christina";
-
-  const cur = deck[idx];
+  const scene = SCENES[sceneIdx];
 
   const start = () => {
-    setDeck(shuffle(QUESTIONS));
-    setIdx(0);
-    setPicked(null);
-    setEnemyHp(MAX_HP);
-    setPlayerHp(MAX_HP);
-    setStreak(0);
-    setScore(0);
-    setDone(null);
     setStarted(true);
+    setSceneIdx(0);
+    setPlayerHp(MAX_HP);
+    setEnemyHp(MAX_HP);
+    setScore(0);
+    setPhase("narration");
+    setLastChoice(null);
+    setEnding(null);
   };
 
-  const choose = (i: number) => {
-    if (picked !== null || done) return;
-    setPicked(i);
-    const correct = i === cur.a;
+  const pick = (c: Choice) => {
+    if (phase !== "choice") return;
+    setLastChoice(c);
 
-    if (correct) {
-      const bonus = streak >= 2 ? 10 : 0;
-      const dmg = PLAYER_DMG + bonus;
-      setHit("enemy");
-      setFloatTxt({ side: "enemy", v: `-${dmg}`, key: Date.now() });
-      setEnemyHp((hp) => Math.max(0, hp - dmg));
-      setStreak((s) => s + 1);
-      setScore((s) => s + (10 + bonus));
-    } else {
+    if (c.hpEnemy && c.hpEnemy > 0) {
+      setEnemyHp((hp) => Math.max(0, hp - c.hpEnemy!));
+      setFloatTxt({ side: "enemy", v: `-${c.hpEnemy}`, key: Date.now() });
+    }
+    if (c.hpSelf && c.hpSelf > 0) {
+      setPlayerHp((hp) => Math.max(0, hp - c.hpSelf!));
+      setFloatTxt({ side: "player", v: `-${c.hpSelf}`, key: Date.now() + 1 });
       setShake(true);
-      setHit("player");
-      setFloatTxt({ side: "player", v: `-${ENEMY_DMG}`, key: Date.now() });
-      setPlayerHp((hp) => Math.max(0, hp - ENEMY_DMG));
-      setStreak(0);
       setTimeout(() => setShake(false), 450);
     }
-    setTimeout(() => setHit(null), 500);
+    setScore((s) => s + (c.good ? 100 : 25));
+    setPhase("result");
   };
 
-  // Cek game over
-  useEffect(() => {
-    if (!started || done) return;
-    if (enemyHp <= 0) {
-      setDone("win");
-      const final = score + 50;
+  const next = () => {
+    const nextIdx = sceneIdx + 1;
+    if (playerHp <= 0 || nextIdx >= SCENES.length) {
+      // Determine ending
+      let result: "victory" | "heroic" | "defeat" = "defeat";
+      if (playerHp > 0 && enemyHp <= 30) result = "victory";
+      else if (playerHp > 0) result = "heroic";
+      setEnding(result);
+      setPhase("end");
+      const final = score + (result === "victory" ? 200 : result === "heroic" ? 100 : 0);
+      setScore(final);
       if (final > best) {
         localStorage.setItem(KEY, String(final));
         setBest(final);
       }
-    } else if (playerHp <= 0) {
-      setDone("lose");
-      if (score > best) {
-        localStorage.setItem(KEY, String(score));
-        setBest(score);
-      }
+      return;
     }
-  }, [enemyHp, playerHp, started, done, score, best]);
-
-  const next = () => {
-    if (done) return;
-    setIdx((i) => (i + 1 >= deck.length ? 0 : i + 1));
-    setPicked(null);
+    setSceneIdx(nextIdx);
+    setLastChoice(null);
+    setPhase("narration");
   };
+
+  // Auto-transition narration -> choice
+  useEffect(() => {
+    if (phase === "narration") {
+      const t = setTimeout(() => setPhase("choice"), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [phase, sceneIdx]);
 
   const enemyHpPct = useMemo(() => (enemyHp / MAX_HP) * 100, [enemyHp]);
   const playerHpPct = useMemo(() => (playerHp / MAX_HP) * 100, [playerHp]);
@@ -189,248 +271,197 @@ function KuisPage() {
       <SiteHeader />
 
       <div className="relative">
+        {/* Battle background */}
         <div
-          className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${battleScene})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/40 to-background" />
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-          <div className="text-center mb-8">
-            <p className="text-gold tracking-[0.3em] text-xs mb-3">— MINI GAME —</p>
-            <h1 className="font-serif-display text-4xl sm:text-5xl text-beige">Pertempuran Benteng Duurstede</h1>
-            <p className="text-muted-foreground mt-3 text-sm sm:text-base">
-              Setiap jawaban benar adalah serangan. Setiap salah, musuh menyerang balik. Skor terbaik:{" "}
-              <span className="text-gold font-semibold">{best}</span>
+        <div className={`relative max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 ${shake ? "animate-shake" : ""}`}>
+          <div className="text-center mb-6">
+            <p className="text-gold tracking-[0.3em] text-xs mb-2">— GAME NARATIF —</p>
+            <h1 className="font-serif-display text-3xl sm:text-5xl text-beige drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+              Pertempuran Benteng Duurstede
+            </h1>
+            <p className="text-beige/80 mt-2 text-sm">
+              Skor terbaik: <span className="text-gold font-semibold">{best}</span>
             </p>
           </div>
 
           {!started ? (
-            <div className="bg-card border border-border rounded-3xl p-8 sm:p-10 shadow-classic">
-              <h2 className="font-serif-display text-2xl text-beige text-center">Pilih Pahlawanmu</h2>
-              <p className="text-muted-foreground text-center text-sm mt-2">
-                Tiap pahlawan punya semangat sama: kalahkan benteng kolonial!
+            <div className="paper-panel rounded-3xl p-8 sm:p-10 max-w-2xl mx-auto text-center">
+              <p className="text-gold font-serif-display tracking-widest text-sm mb-3">SAPARUA · MEI 1817</p>
+              <h2 className="font-serif-display text-3xl text-beige">Pimpin Kapitan Pattimura</h2>
+              <p className="text-beige/85 mt-4">
+                Setiap perintahmu menentukan nasib pasukan dan benteng. Pilih dengan bijak — sejarah sedang menulis namamu.
               </p>
-
-              <div className="grid sm:grid-cols-2 gap-4 mt-8">
-                {([
-                  { id: "pattimura", name: "Kapitan Pattimura", img: pattimuraImg, tag: "Sang Penyerbu Benteng" },
-                  { id: "martha", name: "Martha Christina", img: marthaImg, tag: "Srikandi Pemberani" },
-                ] as const).map((h) => {
-                  const active = hero === h.id;
-                  return (
-                    <button
-                      key={h.id}
-                      onClick={() => setHero(h.id)}
-                      className={`group relative p-5 rounded-2xl border-2 transition-all text-left ${
-                        active
-                          ? "border-gold bg-maroon-deep/60 shadow-glow scale-[1.02]"
-                          : "border-border bg-background/40 hover:border-gold/50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={h.img}
-                          alt={h.name}
-                          className="w-20 h-20 rounded-full object-cover border-2 border-gold/70"
-                        />
-                        <div>
-                          <p className="font-serif-display text-xl text-beige">{h.name}</p>
-                          <p className="text-gold text-xs tracking-wider mt-1">{h.tag}</p>
-                        </div>
-                      </div>
-                      {active && (
-                        <span className="absolute top-3 right-3 text-gold text-xs tracking-widest">✓ TERPILIH</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-8 text-center">
-                <button
-                  onClick={start}
-                  className="px-10 py-4 rounded-full bg-gradient-maroon text-beige font-bold tracking-wide shadow-glow hover:scale-105 transition-transform"
-                >
-                  ⚔ MULAI PERTEMPURAN
-                </button>
-              </div>
-
-              <ul className="mt-8 grid sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
-                <li className="bg-background/40 border border-border rounded-xl p-3">
-                  <span className="text-gold font-semibold">⚔ Benar:</span> serang benteng −25 HP
-                </li>
-                <li className="bg-background/40 border border-border rounded-xl p-3">
-                  <span className="text-gold font-semibold">🛡 Salah:</span> Belanda balas −20 HP
-                </li>
-                <li className="bg-background/40 border border-border rounded-xl p-3">
-                  <span className="text-gold font-semibold">🔥 Combo 3+:</span> bonus damage +10
-                </li>
-              </ul>
+              <button
+                onClick={start}
+                className="mt-8 px-10 py-4 rounded-full bg-gradient-maroon text-beige font-bold tracking-wide shadow-glow hover:scale-105 transition-transform animate-glow-pulse border border-gold"
+              >
+                ⚔ MULAI PERTEMPURAN
+              </button>
             </div>
-          ) : done ? (
-            <div
-              className={`bg-card border rounded-3xl p-10 text-center shadow-glow ${
-                done === "win" ? "border-gold/60" : "border-destructive/50"
-              }`}
-            >
-              <p className="text-gold tracking-[0.3em] text-xs">— HASIL PERTEMPURAN —</p>
-              <h2 className="font-serif-display text-5xl text-beige mt-4">
-                {done === "win" ? "KEMENANGAN! ⚔" : "KALAH 🏳"}
+          ) : phase === "end" ? (
+            <div className="paper-panel rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto">
+              <p className="text-gold tracking-[0.3em] text-xs">— AKHIR PERTEMPURAN —</p>
+              <h2 className="font-serif-display text-4xl sm:text-5xl text-beige mt-4">
+                {ending === "victory"
+                  ? "KEMENANGAN GEMILANG ⚔"
+                  : ending === "heroic"
+                    ? "GUGUR SEBAGAI PAHLAWAN 🌟"
+                    : "BENTENG JATUH 🏳"}
               </h2>
-              <p className="mt-4 text-beige/85 text-lg max-w-xl mx-auto">
-                {done === "win"
-                  ? `${heroName} berhasil meruntuhkan Benteng Duurstede! Semangat 1817 hidup kembali.`
-                  : `Pasukan ${heroName} terdesak. Tapi semangat takkan pernah padam — coba lagi!`}
+              <p className="mt-5 text-beige/90 text-lg leading-relaxed">
+                {ending === "victory"
+                  ? "Berkat kepemimpinanmu, Benteng Duurstede direbut dan rakyat Maluku bangkit melawan penjajah. Namamu, Pattimura, terukir abadi dalam sejarah."
+                  : ending === "heroic"
+                    ? "Walau benteng akhirnya jatuh, perlawananmu menyalakan api perjuangan di seluruh Nusantara. 'Lebih baik mati berkalang tanah daripada hidup dijajah.'"
+                    : "Pasukanmu kalah jumlah dan strategi. Tapi setiap perlawanan menanam benih kemerdekaan. Cobalah kembali — sejarah memberi kesempatan kedua."}
               </p>
-              <p className="text-muted-foreground text-sm mt-4">
-                Skor: <span className="text-gold font-semibold">{score}</span> · Terbaik:{" "}
-                <span className="text-gold">{best}</span>
+              <p className="text-gold mt-6 text-lg">
+                Skor Akhir: <span className="font-bold">{score}</span> · Terbaik:{" "}
+                <span className="font-bold">{best}</span>
               </p>
-
               <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
                 <button
                   onClick={start}
-                  className="px-7 py-3 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow hover:scale-105 transition-transform"
+                  className="px-7 py-3 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow hover:scale-105 transition-transform border border-gold"
                 >
                   ⚔ Bertempur Lagi
                 </button>
-                <button
-                  onClick={() => setStarted(false)}
-                  className="px-7 py-3 rounded-full border border-gold/60 text-gold font-medium hover:bg-gold/10 transition-colors"
-                >
-                  Ganti Pahlawan
-                </button>
                 <Link
                   to="/"
-                  className="px-7 py-3 rounded-full border border-border text-beige/80 font-medium hover:bg-card transition-colors"
+                  className="px-7 py-3 rounded-full border border-gold/60 text-gold font-medium hover:bg-gold/10 transition-colors"
                 >
                   ← Beranda
                 </Link>
               </div>
             </div>
           ) : (
-            <div className={`space-y-5 ${shake ? "animate-shake" : ""}`}>
-              {/* BATTLEFIELD */}
-              <div className="bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-classic">
-                <div className="grid grid-cols-2 gap-4 sm:gap-6 items-end">
-                  {/* PLAYER */}
-                  <div className={`relative ${hit === "player" ? "animate-shake" : ""}`}>
-                    <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28">
-                      <div className="absolute inset-0 rounded-full bg-gradient-maroon blur-xl opacity-70" />
-                      <img
-                        src={heroImg}
-                        alt={heroName}
-                        className="relative w-full h-full rounded-full object-cover border-4 border-gold/80"
-                      />
-                      {floatTxt?.side === "player" && (
-                        <span
-                          key={floatTxt.key}
-                          className="absolute -top-2 left-1/2 -translate-x-1/2 text-destructive font-bold text-xl animate-hero-fade"
-                        >
-                          {floatTxt.v}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-center font-serif-display text-beige mt-3 text-sm sm:text-base">{heroName}</p>
-                    <div className="mt-2 h-2.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
-                        style={{ width: `${playerHpPct}%` }}
-                      />
-                    </div>
-                    <p className="text-center text-xs text-muted-foreground mt-1">
-                      HP {playerHp}/{MAX_HP}
-                    </p>
+            <div className="space-y-5">
+              {/* HP BARS */}
+              <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                <div className="paper-panel rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-serif-display text-beige tracking-widest">KAPITAN PATTIMURA</span>
+                    <span className="text-gold">{playerHp}/{MAX_HP}</span>
                   </div>
-
-                  {/* ENEMY (Benteng) */}
-                  <div className={`relative ${hit === "enemy" ? "animate-shake" : ""}`}>
-                    <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-brown-deep border-4 border-border flex items-center justify-center text-5xl sm:text-6xl shadow-classic">
-                      🏰
-                      {floatTxt?.side === "enemy" && (
-                        <span
-                          key={floatTxt.key}
-                          className="absolute -top-2 left-1/2 -translate-x-1/2 text-gold font-bold text-xl animate-hero-fade"
-                        >
-                          {floatTxt.v}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-center font-serif-display text-beige mt-3 text-sm sm:text-base">
-                      Benteng Duurstede
-                    </p>
-                    <div className="mt-2 h-2.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-destructive to-rose-500 transition-all duration-500"
-                        style={{ width: `${enemyHpPct}%` }}
-                      />
-                    </div>
-                    <p className="text-center text-xs text-muted-foreground mt-1">
-                      HP {enemyHp}/{MAX_HP}
-                    </p>
+                  <div className="mt-2 h-2.5 bg-black/40 rounded-full overflow-hidden border border-gold/40 relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700"
+                      style={{ width: `${playerHpPct}%` }}
+                    />
+                    {floatTxt?.side === "player" && (
+                      <span
+                        key={floatTxt.key}
+                        className="absolute -top-7 right-2 text-destructive font-bold text-lg animate-hero-fade"
+                      >
+                        {floatTxt.v}
+                      </span>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between mt-5 text-xs tracking-wider text-muted-foreground">
-                  <span>SKOR: <span className="text-gold font-semibold">{score}</span></span>
-                  {streak >= 2 && (
-                    <span className="text-gold animate-ember">🔥 COMBO x{streak}</span>
-                  )}
-                  <span>RONDE {idx + 1}</span>
+                <div className="paper-panel rounded-2xl px-4 py-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-serif-display text-beige tracking-widest">BENTENG DUURSTEDE</span>
+                    <span className="text-gold">{enemyHp}/{MAX_HP}</span>
+                  </div>
+                  <div className="mt-2 h-2.5 bg-black/40 rounded-full overflow-hidden border border-gold/40 relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-destructive to-rose-500 transition-all duration-700"
+                      style={{ width: `${enemyHpPct}%` }}
+                    />
+                    {floatTxt?.side === "enemy" && (
+                      <span
+                        key={floatTxt.key}
+                        className="absolute -top-7 right-2 text-gold font-bold text-lg animate-hero-fade"
+                      >
+                        {floatTxt.v}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* QUESTION */}
-              <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 shadow-classic">
-                <h2 className="font-serif-display text-xl sm:text-2xl text-beige leading-snug mb-6">
-                  {cur.q}
-                </h2>
+              {/* DIALOG / NARRATION BOX */}
+              <div className="paper-panel rounded-3xl p-6 sm:p-8 relative">
+                <span className="absolute -top-3 left-6 px-3 py-0.5 bg-maroon-deep border border-gold text-gold text-xs tracking-[0.3em] rounded-full">
+                  BABAK {sceneIdx + 1} / {SCENES.length}
+                </span>
 
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {cur.opts.map((opt, i) => {
-                    const isAns = i === cur.a;
-                    const isPicked = picked === i;
-                    let cls = "border-border bg-background/50 hover:border-gold/60 hover:bg-card";
-                    if (picked !== null) {
-                      if (isAns) cls = "border-emerald-500/70 bg-emerald-500/10 text-beige";
-                      else if (isPicked) cls = "border-destructive bg-destructive/15 text-beige";
-                      else cls = "border-border bg-background/30 opacity-60";
-                    }
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => choose(i)}
-                        disabled={picked !== null}
-                        className={`text-left px-4 py-3 rounded-xl border-2 transition-all font-medium ${cls}`}
-                      >
-                        <span className="text-gold mr-2 font-serif-display">
-                          {String.fromCharCode(65 + i)}.
-                        </span>
-                        {opt}
-                      </button>
-                    );
-                  })}
+                {/* Narration */}
+                <div key={`n-${sceneIdx}`} className="animate-narration">
+                  <p className="text-beige text-base sm:text-lg leading-relaxed font-serif-display tracking-wide">
+                    “{scene.narration}”
+                  </p>
                 </div>
 
-                {picked !== null && (
-                  <div className="mt-5 p-4 rounded-xl bg-maroon-deep/60 border border-gold/30 text-beige/90 text-sm">
-                    <span className="text-gold font-semibold">
-                      {picked === cur.a ? "⚔ Serangan tepat! " : "🛡 Musuh balas menyerang. "}
-                    </span>
-                    {cur.explain}
+                {/* Result narration */}
+                {phase === "result" && lastChoice && (
+                  <div className="mt-5 pt-5 border-t border-gold/30 animate-narration">
+                    <p className="text-gold text-xs tracking-[0.3em] mb-2">
+                      {lastChoice.good ? "⚔ KEPUTUSAN BIJAK" : "🛡 KEPUTUSAN BERAT"}
+                    </p>
+                    <p className="text-beige/95 leading-relaxed italic">{lastChoice.result}</p>
                   </div>
                 )}
 
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={next}
-                    disabled={picked === null}
-                    className="px-7 py-3 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105 transition-transform"
-                  >
-                    Ronde Berikutnya →
-                  </button>
-                </div>
+                {/* Prompt + choices */}
+                {phase === "choice" && scene.prompt && (
+                  <div className="mt-7 animate-narration">
+                    <h3 className="font-serif-display text-2xl sm:text-3xl text-gold text-center tracking-wider drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
+                      {scene.prompt}
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-4 mt-6">
+                      {scene.choices.map((c) => {
+                        const red =
+                          "border-destructive bg-gradient-to-br from-maroon to-maroon-deep text-beige hover:shadow-[0_0_25px_rgba(180,40,40,0.55)]";
+                        const gold =
+                          "border-gold bg-gradient-to-br from-[oklch(0.5_0.14_60)] to-[oklch(0.35_0.1_50)] text-beige hover:shadow-[0_0_25px_rgba(220,170,60,0.6)] animate-glow-pulse";
+                        return (
+                          <button
+                            key={c.label}
+                            onClick={() => pick(c)}
+                            className={`group text-left p-4 sm:p-5 rounded-2xl border-2 transition-all hover:scale-[1.02] active:scale-[0.99] ${
+                              c.variant === "red" ? red : gold
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="font-serif-display text-3xl text-gold drop-shadow">
+                                {c.label}.
+                              </span>
+                              <span className="font-serif-display text-sm sm:text-base leading-snug pt-1 tracking-wide">
+                                {c.text}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Continue button */}
+                {phase === "result" && (
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={next}
+                      className="px-7 py-3 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow hover:scale-105 transition-transform border border-gold"
+                    >
+                      Lanjutkan →
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center text-xs text-beige/70 tracking-widest">
+                SKOR: <span className="text-gold font-semibold">{score}</span>
               </div>
             </div>
           )}
