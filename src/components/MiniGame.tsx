@@ -1,190 +1,314 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import battleScene from "@/assets/battle-scene.jpg";
+import pattimuraImg from "@/assets/pattimura.jpg";
 
-type Choice = { text: string; score: number; next: number | "end"; feedback: string };
-type Scene = { id: number; narrator: string; dialogue: string; choices: Choice[] };
+type Phase = "intro" | "scenario" | "result";
+type Outcome = "success" | "fail" | null;
 
-const scenes: Scene[] = [
-  {
-    id: 1,
-    narrator: "Mei 1817 — Pasukan Belanda mulai mendekati Benteng Duurstede di Saparua.",
-    dialogue: "Apa keputusan pertamamu sebagai Kapitan Besar?",
-    choices: [
-      { text: "Serang langsung tanpa persiapan", score: 0, next: 2, feedback: "Semangatmu besar, tapi pasukan belum siap. Banyak yang gugur sia-sia." },
-      { text: "Susun pertahanan & strategi", score: 2, next: 2, feedback: "Tepat! Strategi matang membuat pasukanmu bergerak terorganisir." },
-      { text: "Mundur sementara mencari bantuan", score: 1, next: 2, feedback: "Aman, tapi musuh keburu memperkuat posisi. Waktu terbuang." },
-    ],
-  },
-  {
-    id: 2,
-    narrator: "Benteng Duurstede berhasil direbut. Residen Van den Berg ditawan.",
-    dialogue: "Bagaimana kau menyikapi tawanan dan persenjataan musuh?",
-    choices: [
-      { text: "Bunuh semua tawanan tanpa ampun", score: 0, next: 3, feedback: "Tindakan kejam. Beberapa kapitan lain mulai meragukan kepemimpinanmu." },
-      { text: "Negosiasi & kuasai persenjataan", score: 2, next: 3, feedback: "Bijak — kau dapat senjata, mesiu, dan reputasi sebagai pemimpin yang berkehormatan." },
-      { text: "Bakar benteng beserta isinya", score: 1, next: 3, feedback: "Musuh memang habis, tapi kau juga kehilangan benteng strategis itu." },
-    ],
-  },
-  {
-    id: 3,
-    narrator: "Martha Christina Tiahahu, 17 tahun, datang menawarkan diri ikut bertempur.",
-    dialogue: "Apa keputusanmu terhadap permintaan Martha?",
-    choices: [
-      { text: "Tolak — perang bukan untuk perempuan muda", score: 0, next: 4, feedback: "Kau kehilangan satu pejuang paling berani. Sejarah mencatat kekecewaannya." },
-      { text: "Terima — beri ia komando di Nusalaut", score: 2, next: 4, feedback: "Tepat! Martha memimpin perempuan Nusalaut, jadi simbol semangat juang." },
-      { text: "Terima, tapi tugaskan urusan logistik saja", score: 1, next: 4, feedback: "Aman tapi kurang memanfaatkan keberaniannya yang luar biasa." },
-    ],
-  },
-  {
-    id: 4,
-    narrator: "Armada bantuan Belanda dari Ambon tiba. Pasukanmu kalah jumlah.",
-    dialogue: "Strategi apa yang kau pilih?",
-    choices: [
-      { text: "Hadapi terbuka di pantai", score: 0, next: 5, feedback: "Berani, tapi pasukanmu hancur dalam pertempuran terbuka." },
-      { text: "Perang gerilya dari hutan & bukit", score: 2, next: 5, feedback: "Brilian! Patroli musuh lenyap satu per satu di rimbun pohon Saparua." },
-      { text: "Sembunyi di kampung-kampung", score: 1, next: 5, feedback: "Beberapa pasukanmu selamat, tapi kau kehilangan inisiatif." },
-    ],
-  },
-  {
-    id: 5,
-    narrator: "Pengkhianat membocorkan markasmu. Belanda menawarkan pengampunan.",
-    dialogue: "Apa jawaban terakhirmu, Kapitan?",
-    choices: [
-      { text: "Menyerah demi nyawa pasukan", score: 0, next: "end", feedback: "Kau selamat sesaat, tapi semangat perlawanan padam terlalu cepat." },
-      { text: "“Lebih baik mati berkalang tanah daripada hidup dijajah!”", score: 2, next: "end", feedback: "Kata-katamu menggema sepanjang masa. Kau gugur, tapi semangat 1817 abadi." },
-      { text: "Pura-pura menerima, lalu kabur diam-diam", score: 1, next: "end", feedback: "Kau lolos, tapi kehormatanmu sebagai Kapitan Besar dipertanyakan." },
-    ],
-  },
-];
+const SCENARIO =
+  "Belanda mulai mengepung benteng dari segala penjuru. Pasukan mulai kelelahan dan peluru hampir habis. Apa keputusanmu, Kapitan?";
+
+const SUCCESS_TEXT =
+  "Strategi hebat! Lewat lebatnya hutan Saparua, kau memukul mundur pasukan musuh dan membakar semangat rakyat Maluku!";
+
+const FAIL_TEXT =
+  "Benteng terkepung tanpa jalan keluar. Persediaan habis, satu per satu pejuang gugur. Sejarah mencatat keberanianmu, namun strategi ini tak menyelamatkan pasukan.";
+
+// Tiny click sound via WebAudio (no external file)
+function playClick() {
+  try {
+    const Ctx = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(720, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + 0.08);
+    g.gain.setValueAtTime(0.18, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+    o.connect(g).connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.13);
+    setTimeout(() => ctx.close(), 200);
+  } catch {
+    /* ignore */
+  }
+}
+
+function useTypewriter(text: string, speed = 28) {
+  const [out, setOut] = useState("");
+  const [done, setDone] = useState(false);
+  const idx = useRef(0);
+  useEffect(() => {
+    setOut("");
+    setDone(false);
+    idx.current = 0;
+    const id = setInterval(() => {
+      idx.current += 1;
+      setOut(text.slice(0, idx.current));
+      if (idx.current >= text.length) {
+        clearInterval(id);
+        setDone(true);
+      }
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return { out, done };
+}
 
 export function MiniGame() {
-  const [status, setStatus] = useState<"start" | "playing" | "end">("start");
-  const [currentScene, setCurrentScene] = useState(0);
-  const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [outcome, setOutcome] = useState<Outcome>(null);
+
+  const dialogText = useMemo(() => {
+    if (phase === "scenario") return SCENARIO;
+    if (phase === "result") return outcome === "success" ? SUCCESS_TEXT : FAIL_TEXT;
+    return "";
+  }, [phase, outcome]);
+
+  const { out, done } = useTypewriter(dialogText);
+
+  const choose = (opt: "A" | "B") => {
+    playClick();
+    setOutcome(opt === "A" ? "success" : "fail");
+    setPhase("result");
+  };
 
   const start = () => {
-    setStatus("playing");
-    setCurrentScene(0);
-    setScore(0);
-    setFeedback(null);
+    playClick();
+    setPhase("scenario");
+    setOutcome(null);
   };
 
-  const choose = (c: Choice) => {
-    setScore((s) => s + c.score);
-    setFeedback(c.feedback);
+  const reset = () => {
+    playClick();
+    setPhase("intro");
+    setOutcome(null);
   };
-
-  const next = () => {
-    const scene = scenes[currentScene];
-    const lastChoice = scene.choices.find((c) => c.feedback === feedback);
-    setFeedback(null);
-    if (!lastChoice) return;
-    if (lastChoice.next === "end" || currentScene >= scenes.length - 1) {
-      setStatus("end");
-    } else {
-      setCurrentScene(currentScene + 1);
-    }
-  };
-
-  const maxScore = scenes.length * 2;
-  const ending =
-    score >= maxScore * 0.8
-      ? { title: "Strategi Tepat ⚔", desc: "Kepemimpinanmu cemerlang. Kau layak disebut Kapitan Besar sejati." }
-      : score >= maxScore * 0.5
-        ? { title: "Cukup Baik 🛡", desc: "Banyak keputusan bijak, walau ada yang berat. Sejarah tetap mengenangmu." }
-        : { title: "Perlu Belajar Lagi 📜", desc: "Beberapa pilihanmu merugikan pasukan. Pelajari kembali kisah Pattimura & Martha." };
 
   return (
-    <section className="py-24 px-6 bg-brown-deep/30 border-t border-border">
-      <div className="max-w-3xl mx-auto">
+    <section className="relative py-20 px-4 sm:px-6 border-t border-border overflow-hidden">
+      {/* Sepia-tinted dramatic background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url(${battleScene})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "sepia(0.55) saturate(1.1) contrast(1.05) brightness(0.55)",
+        }}
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-maroon-deep/70 via-background/60 to-background pointer-events-none" />
+
+      <div className="relative max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-gold tracking-[0.3em] text-xs mb-3">— UJI STRATEGIMU —</p>
-          <h2 className="font-serif-display text-4xl sm:text-5xl text-beige">The Last Stand</h2>
-          <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
-            Simulasi naratif untuk mereview materi. Pilih jalan ceritamu sebagai pemimpin perlawanan.
-          </p>
+          <p className="text-gold tracking-[0.4em] text-xs mb-3">— INTERACTIVE NARRATIVE —</p>
+          <h2 className="font-serif-display text-4xl sm:text-5xl text-beige drop-shadow-2xl">
+            The Last Stand
+          </h2>
         </div>
 
-        {status === "start" && (
-          <div className="paper-panel rounded-3xl p-8 sm:p-10 text-center">
-            <p className="text-gold font-serif-display tracking-widest text-sm mb-3">SAPARUA · 1817</p>
-            <h3 className="font-serif-display text-2xl text-beige">Pimpin Perlawanan</h3>
-            <p className="text-beige/85 mt-3">
-              Setiap pilihan menentukan skormu. Tunjukkan strategi terbaikmu sebagai Kapitan.
-            </p>
-            <button
-              onClick={start}
-              className="mt-7 px-9 py-3.5 rounded-full bg-gradient-maroon text-beige font-bold tracking-wide shadow-glow hover:scale-105 transition-transform border border-gold animate-glow-pulse"
+        {/* Stage: character + dialog */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-6 items-end">
+          {/* Character portrait */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={outcome ?? phase}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.9, ease: "easeOut" }}
+              className="relative mx-auto md:mx-0"
             >
-              ⚔ Mulai Simulasi
-            </button>
-          </div>
-        )}
-
-        {status === "playing" && (
-          <div className="paper-panel rounded-3xl p-6 sm:p-8 relative">
-            <span className="absolute -top-3 left-6 px-3 py-0.5 bg-maroon-deep border border-gold text-gold text-xs tracking-[0.3em] rounded-full">
-              SCENE {currentScene + 1} / {scenes.length}
-            </span>
-            <div key={`s-${currentScene}`} className="animate-narration">
-              <p className="text-beige/80 text-sm italic leading-relaxed">{scenes[currentScene].narrator}</p>
-              <h3 className="font-serif-display text-xl sm:text-2xl text-gold mt-4">
-                {scenes[currentScene].dialogue}
-              </h3>
-            </div>
-
-            {!feedback ? (
-              <div className="mt-6 space-y-3">
-                {scenes[currentScene].choices.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => choose(c)}
-                    className="w-full text-left p-4 rounded-xl border border-gold/40 bg-card hover:border-gold hover:bg-card/80 hover:translate-x-1 transition-all text-beige font-serif-display"
-                  >
-                    <span className="text-gold mr-2">{String.fromCharCode(65 + i)}.</span>
-                    {c.text}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-6 animate-narration">
-                <div className="p-5 rounded-xl bg-maroon-deep/60 border-l-4 border-gold">
-                  <p className="text-gold text-xs tracking-[0.3em] mb-2">— KONSEKUENSI —</p>
-                  <p className="text-beige/95 italic leading-relaxed">{feedback}</p>
-                </div>
-                <div className="mt-5 flex justify-between items-center">
-                  <span className="text-beige/70 text-sm">
-                    Skor: <span className="text-gold font-semibold">{score}</span> / {maxScore}
+              <div className="relative w-48 sm:w-56 md:w-full max-w-xs">
+                <div className="absolute -inset-2 rounded-3xl bg-gradient-gold opacity-30 blur-xl" />
+                <img
+                  src={pattimuraImg}
+                  alt="Kapitan Pattimura"
+                  className="relative rounded-3xl border-2 border-gold shadow-glow w-full object-cover"
+                  style={{ filter: "sepia(0.3) contrast(1.05)" }}
+                />
+                <div className="absolute bottom-2 left-2 right-2 text-center">
+                  <span className="inline-block px-3 py-1 rounded-full bg-maroon-deep/80 border border-gold/60 text-gold text-[10px] tracking-[0.3em]">
+                    KAPITAN PATTIMURA
                   </span>
-                  <button
-                    onClick={next}
-                    className="px-6 py-2.5 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow hover:scale-105 transition-transform border border-gold"
-                  >
-                    Lanjut →
-                  </button>
                 </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Glassmorphism dialog box */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="relative rounded-2xl border border-gold/50 p-6 sm:p-8 backdrop-blur-xl"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.22 0.08 30 / 0.55), oklch(0.18 0.05 40 / 0.35))",
+              boxShadow: "0 10px 40px -10px oklch(0.1 0.05 25 / 0.7), inset 0 1px 0 oklch(0.95 0.05 80 / 0.15)",
+            }}
+          >
+            {phase === "intro" && (
+              <div className="text-center">
+                <p className="text-gold font-serif-display tracking-[0.3em] text-xs mb-3">
+                  SAPARUA · 1817
+                </p>
+                <h3 className="font-serif-display text-2xl sm:text-3xl text-beige">
+                  Pertahanan Terakhir
+                </h3>
+                <p className="text-beige/80 mt-3 leading-relaxed">
+                  Ambil peran sebagai Kapitan. Sebuah keputusan akan menentukan nasib rakyat Maluku.
+                </p>
+                <button
+                  onClick={start}
+                  className="mt-6 px-8 py-3 rounded-full bg-gradient-maroon text-beige font-bold tracking-wide border border-gold shadow-glow hover:scale-105 transition-transform animate-glow-pulse"
+                >
+                  ⚔ Mulai Cerita
+                </button>
               </div>
             )}
-          </div>
-        )}
 
-        {status === "end" && (
-          <div className="paper-panel rounded-3xl p-8 sm:p-10 text-center animate-narration">
-            <p className="text-gold tracking-[0.3em] text-xs">— HASIL SIMULASI —</p>
-            <h3 className="font-serif-display text-3xl sm:text-4xl text-beige mt-3">{ending.title}</h3>
-            <p className="text-gold mt-4 text-lg">
-              Skor: <span className="font-bold">{score}</span> / {maxScore}
-            </p>
-            <p className="text-beige/90 mt-4 leading-relaxed">{ending.desc}</p>
-            <button
-              onClick={start}
-              className="mt-7 px-8 py-3 rounded-full bg-gradient-maroon text-beige font-medium shadow-glow hover:scale-105 transition-transform border border-gold"
-            >
-              ⟲ Coba Lagi
-            </button>
-          </div>
-        )}
+            {phase !== "intro" && (
+              <>
+                <p className="font-serif-display text-beige text-lg sm:text-xl leading-relaxed min-h-[6rem]">
+                  {out}
+                  {!done && <span className="inline-block w-2 h-5 bg-gold ml-1 animate-pulse align-middle" />}
+                </p>
+
+                {/* Choices */}
+                {phase === "scenario" && done && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                  >
+                    <ChoiceButton
+                      label="A"
+                      text="Lakukan serangan kejutan lewat hutan"
+                      onClick={() => choose("A")}
+                      tone="gold"
+                    />
+                    <ChoiceButton
+                      label="B"
+                      text="Tetap bertahan di dalam benteng"
+                      onClick={() => choose("B")}
+                      tone="maroon"
+                    />
+                  </motion.div>
+                )}
+
+                {/* Result actions */}
+                {phase === "result" && done && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-6 flex flex-wrap items-center gap-3"
+                  >
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs tracking-[0.3em] border ${
+                        outcome === "success"
+                          ? "bg-gold/15 border-gold text-gold"
+                          : "bg-maroon-deep/60 border-maroon text-beige/90"
+                      }`}
+                    >
+                      {outcome === "success" ? "STRATEGI BERHASIL" : "STRATEGI GAGAL"}
+                    </span>
+                    <button
+                      onClick={reset}
+                      className="ml-auto px-6 py-2.5 rounded-full bg-gradient-maroon text-beige font-medium border border-gold hover:scale-105 transition-transform"
+                    >
+                      ⟲ Ulangi Cerita
+                    </button>
+                  </motion.div>
+                )}
+              </>
+            )}
+          </motion.div>
+        </div>
       </div>
+
+      {/* Success flash + fireworks */}
+      <AnimatePresence>
+        {phase === "result" && outcome === "success" && <Fireworks />}
+      </AnimatePresence>
     </section>
+  );
+}
+
+function ChoiceButton({
+  label,
+  text,
+  onClick,
+  tone,
+}: {
+  label: string;
+  text: string;
+  onClick: () => void;
+  tone: "gold" | "maroon";
+}) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className={`group relative text-left p-4 rounded-xl border transition-all overflow-hidden ${
+        tone === "gold"
+          ? "border-gold/60 bg-gold/5 hover:bg-gold/15"
+          : "border-maroon/70 bg-maroon-deep/40 hover:bg-maroon-deep/70"
+      }`}
+    >
+      <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 50%, oklch(0.78 0.14 75 / 0.35), transparent 60%)",
+        }}
+      />
+      <span className="relative font-serif-display text-beige">
+        <span className="text-gold mr-2">{label}.</span>
+        {text}
+      </span>
+    </motion.button>
+  );
+}
+
+function Fireworks() {
+  const sparks = Array.from({ length: 18 });
+  return (
+    <>
+      {/* Flash */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.6, 0] }}
+        transition={{ duration: 0.8 }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(circle at 50% 40%, oklch(0.95 0.14 80 / 0.7), transparent 60%)" }}
+      />
+      {/* Sparks */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        {sparks.map((_, i) => {
+          const angle = (i / sparks.length) * Math.PI * 2;
+          const dist = 140 + (i % 3) * 40;
+          const x = Math.cos(angle) * dist;
+          const y = Math.sin(angle) * dist;
+          return (
+            <motion.span
+              key={i}
+              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+              animate={{ x, y, opacity: 0, scale: 0.4 }}
+              transition={{ duration: 1.1, ease: "easeOut", delay: (i % 6) * 0.04 }}
+              className="absolute w-2 h-2 rounded-full"
+              style={{
+                background: i % 2 ? "var(--gold)" : "oklch(0.85 0.18 55)",
+                boxShadow: "0 0 12px var(--gold)",
+              }}
+            />
+          );
+        })}
+      </div>
+    </>
   );
 }
