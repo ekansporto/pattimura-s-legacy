@@ -51,6 +51,8 @@ interface PuzzleData {
 }
 interface GameState {
   player: Player;
+  gameStarted: boolean;
+  missionStarted: boolean;
   metPattimura: boolean; metMartha: boolean;
   puzzlesSolved: boolean[]; doorsOpen: boolean[];
   exitUnlocked: boolean; gameWon: boolean;
@@ -67,6 +69,8 @@ type GameAction =
   | { type: "ANSWER_PUZZLE"; answerIndex: number }
   | { type: "CLOSE_PUZZLE" }
   | { type: "WIN_GAME" }
+  | { type: "START_GAME" }
+  | { type: "START_MISSION" }
   | { type: "SET_HINT"; text: string }
   | { type: "LOAD_SAVE"; savedState: Partial<GameState> };
 
@@ -116,6 +120,18 @@ const PUZZLES: PuzzleData[] = [
 ];
 
 const DIALOGS: Record<string, DialogStep[]> = {
+  mission_brief: [
+    { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
+      text: "Hai Anak Muda! Aku Thomas Matulessy — Kapitan Pattimura. Kamu terjebak di dunia digital ini." },
+    { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
+      text: "Misimu: temukan 3 terminal sejarah (α, β, γ), jawab tantangannya. Tiap jawaban benar membuka pintu menuju portal keluar." },
+    { speaker: "SISTEM", portrait: "system",
+      text: "✓ Misi diaktifkan! Terminal kini bisa diakses. Ilmu adalah kuncimu." },
+  ],
+  no_mission: [
+    { speaker: "SISTEM", portrait: "system",
+      text: "⚠ Selesaikan tugas dulu — bicara dengan Kapitan Pattimura (sosok berbaju merah-emas) untuk memulai misi." },
+  ],
   pattimura_intro: [
     { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
       text: "Hai, Anak Muda! Kamu terjebak di dunia digital ini? Tenang, aku Thomas Matulessy — Kapitan Pattimura. Aku akan membimbingmu keluar." },
@@ -289,6 +305,8 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
 // ============= Reducer =============
 const initialState: GameState = {
   player: { x: 1, y: 1, facing: "down", walkFrame: 0, walkTimer: 0 },
+  gameStarted: false,
+  missionStarted: false,
   metPattimura: false, metMartha: false,
   puzzlesSolved: [false, false, false],
   doorsOpen: [false, false, false, false, false, false, false, false, false, false],
@@ -354,6 +372,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, selectedAnswer: null };
     case "WIN_GAME":
       return { ...state, gameWon: true };
+    case "START_GAME":
+      return { ...state, gameStarted: true };
+    case "START_MISSION":
+      return { ...state, missionStarted: true, metPattimura: true };
     case "SET_HINT":
       return { ...state, hintText: action.text };
     case "LOAD_SAVE":
@@ -382,12 +404,13 @@ export function PattimuraQuest() {
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
+        gameStarted: state.gameStarted, missionStarted: state.missionStarted,
         metPattimura: state.metPattimura, metMartha: state.metMartha,
         puzzlesSolved: state.puzzlesSolved, doorsOpen: state.doorsOpen,
         exitUnlocked: state.exitUnlocked, player: state.player,
       }));
     } catch {}
-  }, [state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
+  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
 
   const handleInteract = useCallback(() => {
     const s = stateRef.current;
@@ -401,7 +424,12 @@ export function PattimuraQuest() {
     const tile = MAP_RAW[ty]?.[tx];
     const key = `${tx}_${ty}`;
     if (tile === 5) {
-      dispatch({ type: "OPEN_DIALOG", dialog: s.metPattimura ? DIALOGS.pattimura_revisit : DIALOGS.pattimura_intro, npc: "pattimura" });
+      if (!s.missionStarted) {
+        dispatch({ type: "START_MISSION" });
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.mission_brief, npc: "pattimura" });
+      } else {
+        dispatch({ type: "OPEN_DIALOG", dialog: s.metPattimura ? DIALOGS.pattimura_revisit : DIALOGS.pattimura_intro, npc: "pattimura" });
+      }
       return;
     }
     if (tile === 6) {
@@ -409,6 +437,7 @@ export function PattimuraQuest() {
       return;
     }
     if (tile === 4) {
+      if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
       const pid = TERMINAL_PUZZLE_MAP[key];
       if (pid === undefined) return;
       if (s.puzzlesSolved[pid]) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved }); return; }
@@ -446,7 +475,7 @@ export function PattimuraQuest() {
       const delta = lastTimeRef.current ? ts - lastTimeRef.current : 16;
       lastTimeRef.current = ts;
       const s = stateRef.current;
-      if (!s.dialogActive && !s.puzzleActive && !s.gameWon) {
+      if (s.gameStarted && !s.dialogActive && !s.puzzleActive && !s.gameWon) {
         const speed = 4 / 1000;
         const k = keysRef.current;
         let dx = 0, dy = 0;
@@ -456,6 +485,12 @@ export function PattimuraQuest() {
         if (k.has("arrowdown") || k.has("s")) dy = speed * delta;
         if (dx !== 0) dispatch({ type: "MOVE_PLAYER", dx, dy: 0, delta });
         if (dy !== 0) dispatch({ type: "MOVE_PLAYER", dx: 0, dy, delta });
+        // Auto-win when stepping on exit tile
+        const pCol = Math.round(s.player.x);
+        const pRow = Math.round(s.player.y);
+        if (s.exitUnlocked && MAP_RAW[pRow]?.[pCol] === 7) {
+          dispatch({ type: "WIN_GAME" });
+        }
       }
       const c = canvasRef.current; if (c) { const ctx = c.getContext("2d"); if (ctx) renderFrame(ctx, s); }
       raf = requestAnimationFrame(loop);
@@ -482,7 +517,13 @@ export function PattimuraQuest() {
         <div className="text-center mb-6">
           <p className="text-gold tracking-[0.4em] text-xs mb-2">— PATTIMURA QUEST —</p>
           <h2 className="font-serif-display text-3xl sm:text-4xl text-beige">Escape From Digital World</h2>
-          <p className="text-beige/70 text-sm mt-2">{state.hintText}</p>
+          <p className="text-beige/70 text-sm mt-2">
+            {!state.missionStarted
+              ? "🎯 Cari Kapitan Pattimura (sosok merah-emas) dan tekan E untuk memulai misi"
+              : state.exitUnlocked
+                ? "✓ Semua puzzle selesai — menuju portal EXIT (kanan-bawah)"
+                : "Misi aktif: temukan & jawab 3 terminal sejarah (α β γ)"}
+          </p>
         </div>
 
         {/* HUD */}
@@ -513,6 +554,38 @@ export function PattimuraQuest() {
             className="block w-full h-auto"
             style={{ imageRendering: "pixelated" }}
           />
+
+          {/* Intro overlay */}
+          <AnimatePresence>
+            {!state.gameStarted && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/90 flex items-center justify-center p-4 text-center"
+              >
+                <div className="max-w-md">
+                  <p className="text-gold tracking-[0.4em] text-xs mb-3">— MISI BARU —</p>
+                  <h3 className="font-serif-display text-2xl sm:text-3xl text-beige mb-3">
+                    Terjebak di Dunia Digital
+                  </h3>
+                  <p className="text-beige/80 text-sm leading-relaxed mb-5">
+                    Kamu terbangun di sebuah ruangan asing. Pintu-pintu terkunci.
+                    Carilah <span className="text-gold font-semibold">Kapitan Pattimura</span> di
+                    pojok kiri-atas peta dan tekan <kbd className="px-1.5 py-0.5 bg-gold/20 border border-gold/50 rounded text-gold text-xs">E</kbd> untuk
+                    menerima misi.
+                  </p>
+                  <button
+                    onClick={() => dispatch({ type: "START_GAME" })}
+                    className="bg-gradient-gold text-maroon-deep font-bold px-8 py-3 rounded-full tracking-widest uppercase text-sm hover:scale-105 transition-transform"
+                  >
+                    ► Mulai Petualangan
+                  </button>
+                  <p className="text-beige/50 text-[10px] mt-4 tracking-wider">
+                    WASD/Panah = gerak · E/Spasi = interaksi
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Dialog */}
           <AnimatePresence>
