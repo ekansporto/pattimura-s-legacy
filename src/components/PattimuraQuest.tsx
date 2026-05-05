@@ -382,8 +382,7 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
           break;
         }
         case 4: {
-          const pid = TERMINAL_PUZZLE_MAP[key];
-          drawTerminal(ctx, px, py, pid !== undefined && state.puzzlesSolved[pid]);
+          drawTerminal(ctx, px, py, state.totalAnswered >= TOTAL_QUESTIONS);
           break;
         }
         case 5: drawPattimura(ctx, px, py); break;
@@ -512,11 +511,13 @@ export function PattimuraQuest() {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         gameStarted: state.gameStarted, missionStarted: state.missionStarted,
         metPattimura: state.metPattimura, metMartha: state.metMartha,
-        puzzlesSolved: state.puzzlesSolved, doorsOpen: state.doorsOpen,
+        puzzlesAnswered: state.puzzlesAnswered, doorsOpen: state.doorsOpen,
+        score: state.score, totalAnswered: state.totalAnswered,
+        startedAt: state.startedAt, elapsedMs: state.elapsedMs,
         exitUnlocked: state.exitUnlocked, player: state.player,
       }));
     } catch {}
-  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
+  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesAnswered, state.doorsOpen, state.score, state.totalAnswered, state.exitUnlocked, state.player]);
 
   const handleInteract = useCallback(() => {
     const s = stateRef.current;
@@ -544,10 +545,14 @@ export function PattimuraQuest() {
     }
     if (tile === 4) {
       if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
-      const pid = TERMINAL_PUZZLE_MAP[key];
-      if (pid === undefined) return;
-      if (s.puzzlesSolved[pid]) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved }); return; }
-      dispatch({ type: "OPEN_PUZZLE", puzzleId: pid });
+      void key;
+      const nextId = s.puzzlesAnswered.findIndex((a) => !a);
+      if (nextId === -1) {
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.all_done });
+        return;
+      }
+      playSfx("open");
+      dispatch({ type: "OPEN_PUZZLE", puzzleId: nextId });
       return;
     }
     if (tile === 7) {
@@ -627,23 +632,23 @@ export function PattimuraQuest() {
             {!state.missionStarted
               ? "🎯 Cari Kapitan Pattimura (sosok merah-emas) dan tekan E untuk memulai misi"
               : state.exitUnlocked
-                ? "✓ Semua puzzle selesai — menuju portal EXIT (kanan-bawah)"
-                : "Misi aktif: temukan & jawab 3 terminal sejarah (α β γ)"}
+              ? "✓ Semua pertanyaan selesai — menuju portal EXIT (kanan-bawah)"
+              : `Misi aktif: jawab ${TOTAL_QUESTIONS} pertanyaan di terminal sejarah`}
           </p>
         </div>
 
         {/* HUD */}
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-          <div className="flex gap-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={`px-3 py-1.5 rounded-md border text-xs font-mono tracking-wider ${
-                state.puzzlesSolved[i]
-                  ? "border-gold bg-gold/20 text-gold"
-                  : "border-border bg-background/60 text-beige/40"
-              }`}>
-                {state.puzzlesSolved[i] ? "✓" : "○"} TERMINAL {["α","β","γ"][i]}
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <div className="px-3 py-1.5 rounded-md border border-gold bg-gold/10 text-gold text-xs font-mono tracking-wider">
+              ⭐ SCORE: {state.score} / {state.totalAnswered}
+            </div>
+            <div className="px-3 py-1.5 rounded-md border border-border bg-background/60 text-beige text-xs font-mono tracking-wider">
+              📋 {state.totalAnswered} / {TOTAL_QUESTIONS} DIJAWAB
+            </div>
+            <div className="px-3 py-1.5 rounded-md border border-border bg-background/60 text-beige text-xs font-mono tracking-wider">
+              ⏱ {formatTime(state.elapsedMs)}
+            </div>
           </div>
           <button onClick={reset} className="px-3 py-1.5 rounded-full border border-border text-beige/80 text-xs hover:bg-background/60">
             ⟲ Reset
