@@ -275,21 +275,25 @@ function Index() {
         </div>
       </section>
 
-      {/* FUN FACT */}
+      {/* CTA KUIS */}
       <section className="py-24 px-6 bg-maroon-deep">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8 text-center">
-          {[
-            { n: "1817", l: "Tahun perlawanan Maluku" },
-            { n: "17", l: "Usia Martha saat bertempur" },
-            { n: "∞", l: "Warisan semangat juang" },
-          ].map((s, i) => (
-            <Reveal key={i} delay={i * 100}>
-              <div className="p-8 rounded-2xl bg-card/40 border border-gold/20 backdrop-blur">
-                <p className="font-serif-display text-5xl text-gold">{s.n}</p>
-                <p className="text-beige/80 mt-3 text-sm tracking-wider">{s.l}</p>
-              </div>
-            </Reveal>
-          ))}
+        <div className="max-w-3xl mx-auto text-center">
+          <Reveal>
+            <p className="text-gold tracking-[0.3em] text-xs mb-3">— UJI PEMAHAMAN —</p>
+            <h2 className="font-serif-display text-4xl sm:text-5xl text-beige">
+              Sudah siap menguji pengetahuanmu?
+            </h2>
+            <p className="mt-5 text-beige/80 text-lg leading-relaxed">
+              Mainkan simulasi naratif singkat dan buktikan seberapa dalam kamu memahami
+              perjuangan rakyat Maluku tahun 1817.
+            </p>
+            <Link
+              to="/kuis"
+              className="inline-block mt-10 px-8 py-3.5 rounded-full bg-gradient-gold text-maroon-deep font-semibold shadow-glow hover:scale-105 transition-transform"
+            >
+              Mulai Kuis →
+            </Link>
+          </Reveal>
         </div>
       </section>
 
