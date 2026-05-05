@@ -275,6 +275,44 @@ function isWalkable(doorsOpen: boolean[], col: number, row: number): boolean {
   return true;
 }
 
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60).toString().padStart(2, "0");
+  const s = (total % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+// Lightweight WebAudio SFX — no assets, only triggers after user interaction.
+let _audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    if (!_audioCtx) {
+      const Ctor = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
+      _audioCtx = new Ctor();
+    }
+    if (_audioCtx.state === "suspended") void _audioCtx.resume();
+    return _audioCtx;
+  } catch { return null; }
+}
+function playSfx(kind: "correct" | "wrong" | "open" | "win") {
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const tone = (freq: number, start: number, dur: number, type: OscillatorType = "sine", vol = 0.18) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, now + start);
+    g.gain.setValueAtTime(0, now + start);
+    g.gain.linearRampToValueAtTime(vol, now + start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(now + start); o.stop(now + start + dur + 0.02);
+  };
+  if (kind === "correct") { tone(660, 0, 0.12, "triangle"); tone(880, 0.1, 0.18, "triangle"); tone(1320, 0.22, 0.22, "triangle"); }
+  else if (kind === "wrong") { tone(220, 0, 0.18, "square", 0.14); tone(150, 0.18, 0.28, "square", 0.14); }
+  else if (kind === "open") { tone(520, 0, 0.08, "sine", 0.12); }
+  else if (kind === "win") { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.22, "triangle")); }
+}
+
 // ============= Renderer =============
 function drawFloor(ctx: CanvasRenderingContext2D, px: number, py: number) {
   ctx.fillStyle = "#1a1a2e";
