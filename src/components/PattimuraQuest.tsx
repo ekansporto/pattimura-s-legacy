@@ -31,14 +31,8 @@ const DOOR_POSITIONS: Record<string, number> = {
   "6_3": 0, "3_5": 1, "11_4": 2, "9_7": 3, "13_7": 4,
   "2_9": 5, "4_11": 6, "17_6": 7, "15_10": 8, "17_12": 9,
 };
-// Doors are open from the start so the player can explore freely.
-// Only the EXIT tile is gated — unlocks after all 3 terminals are solved.
-const PUZZLE_DOOR_LINKS: Record<number, number[]> = {
-  0: [], 1: [], 2: [],
-};
-const TERMINAL_PUZZLE_MAP: Record<string, number> = {
-  "16_3": 0, "2_7": 1, "17_8": 2,
-};
+// Doors are open from the start. Exit unlocks after ALL 10 questions answered.
+const TOTAL_QUESTIONS = 10;
 
 // ============= Types =============
 type Direction = "up" | "down" | "left" | "right";
@@ -54,11 +48,13 @@ interface GameState {
   gameStarted: boolean;
   missionStarted: boolean;
   metPattimura: boolean; metMartha: boolean;
-  puzzlesSolved: boolean[]; doorsOpen: boolean[];
+  puzzlesAnswered: boolean[]; doorsOpen: boolean[];
+  score: number; totalAnswered: number;
+  startedAt: number | null; elapsedMs: number;
   exitUnlocked: boolean; gameWon: boolean;
   dialogActive: boolean; currentDialog: DialogStep[] | null; dialogStepIndex: number;
   puzzleActive: boolean; currentPuzzleId: number | null;
-  puzzleAnswered: boolean; selectedAnswer: number | null;
+  puzzleAnswered: boolean; lastAnswerCorrect: boolean | null; selectedAnswer: number | null;
   hintText: string;
 }
 type GameAction =
@@ -71,6 +67,7 @@ type GameAction =
   | { type: "WIN_GAME" }
   | { type: "START_GAME" }
   | { type: "START_MISSION" }
+  | { type: "TICK_TIMER"; now: number }
   | { type: "SET_HINT"; text: string }
   | { type: "LOAD_SAVE"; savedState: Partial<GameState> };
 
@@ -119,6 +116,101 @@ const PUZZLES: PuzzleData[] = [
   },
 ];
 
+PUZZLES.push(
+  {
+    id: 3,
+    title: "Terminal Delta — Benteng Duurstede",
+    subtitle: "Identifikasi lokasi pertempuran",
+    context: "Benteng Duurstede adalah benteng peninggalan VOC yang terletak di Pulau Saparua, Maluku Tengah. Benteng ini menjadi target utama serangan rakyat Maluku pada 16 Mei 1817 di bawah pimpinan Kapitan Pattimura.",
+    question: "Di pulau manakah Benteng Duurstede terletak?",
+    answers: ["A. Ambon", "B. Saparua", "C. Seram", "D. Banda"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Tepat! Benteng Duurstede ada di Pulau Saparua.",
+    feedbackWrong: "✗ Salah. Benteng Duurstede terletak di Saparua.",
+  },
+  {
+    id: 4,
+    title: "Terminal Epsilon — Akhir Hidup Pattimura",
+    subtitle: "Catat tanggal eksekusi",
+    context: "Setelah ditangkap pasukan Belanda, Kapitan Pattimura diadili dan dijatuhi hukuman mati. Ia dihukum gantung di depan Benteng Nieuw Victoria, Ambon, pada 16 Desember 1817.",
+    question: "Bagaimana Pattimura menemui akhir hidupnya?",
+    answers: [
+      "A. Tewas di medan perang Saparua",
+      "B. Dihukum gantung di Ambon, 16 Desember 1817",
+      "C. Dibuang ke Pulau Banda hingga wafat",
+      "D. Ditembak mati di kapal VOC",
+    ],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Pattimura digantung di Ambon, 16 Desember 1817.",
+    feedbackWrong: "✗ Kurang tepat. Ia dihukum gantung di Ambon.",
+  },
+  {
+    id: 5,
+    title: "Terminal Zeta — Ayah Martha",
+    subtitle: "Verifikasi silsilah pejuang",
+    context: "Martha Christina Tiahahu adalah putri Kapitan Paulus Tiahahu, seorang pemimpin perlawanan dari Nusalaut yang juga turut berjuang bersama Pattimura.",
+    question: "Siapa nama ayah Martha Christina Tiahahu?",
+    answers: ["A. Thomas Matulessy", "B. Kapitan Paulus Tiahahu", "C. Said Perintah", "D. Anthony Rhebok"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Tepat! Ayahnya adalah Kapitan Paulus Tiahahu.",
+    feedbackWrong: "✗ Salah. Ayah Martha adalah Kapitan Paulus Tiahahu.",
+  },
+  {
+    id: 6,
+    title: "Terminal Eta — Senjata Tradisional",
+    subtitle: "Identifikasi persenjataan rakyat Maluku",
+    context: "Dalam perlawanan 1817, rakyat Maluku menggunakan senjata tradisional khas mereka — parang panjang dan perisai kayu — untuk melawan pasukan VOC yang bersenjata api.",
+    question: "Apa nama kombinasi senjata khas Maluku berupa parang dan perisai?",
+    answers: ["A. Keris & Tameng", "B. Parang Salawaku", "C. Tombak Cakalele", "D. Mandau & Klewang"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Parang Salawaku adalah senjata khas Maluku.",
+    feedbackWrong: "✗ Belum tepat. Jawabannya Parang Salawaku.",
+  },
+  {
+    id: 7,
+    title: "Terminal Theta — Asal Daerah Martha",
+    subtitle: "Tentukan tanah kelahiran",
+    context: "Martha Christina Tiahahu lahir pada 4 Januari 1800 di Desa Abubu, Pulau Nusalaut, Maluku. Ia tumbuh sebagai gadis pemberani yang menolak penjajahan sejak usia muda.",
+    question: "Di pulau manakah Martha Christina Tiahahu dilahirkan?",
+    answers: ["A. Saparua", "B. Nusalaut", "C. Haruku", "D. Ambon"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Martha lahir di Nusalaut.",
+    feedbackWrong: "✗ Salah. Martha lahir di Pulau Nusalaut.",
+  },
+  {
+    id: 8,
+    title: "Terminal Iota — Penyebab Perlawanan",
+    subtitle: "Analisis akar konflik",
+    context: "Kembalinya Belanda ke Maluku pasca-Inggris membawa kebijakan yang menyengsarakan: monopoli rempah, kerja paksa (rodi), pemotongan tunjangan guru, serta pengiriman pemuda Maluku menjadi serdadu di Jawa. Inilah yang memicu perlawanan 1817.",
+    question: "Manakah BUKAN penyebab perlawanan rakyat Maluku 1817?",
+    answers: [
+      "A. Monopoli rempah-rempah oleh Belanda",
+      "B. Kerja paksa (rodi)",
+      "C. Pemberian tanah luas kepada rakyat",
+      "D. Pengiriman pemuda Maluku ke Jawa",
+    ],
+    correctIndex: 2,
+    feedbackCorrect: "✓ Tepat! Belanda justru merampas, bukan memberi tanah.",
+    feedbackWrong: "✗ Kurang tepat. Belanda tidak memberi tanah kepada rakyat.",
+  },
+  {
+    id: 9,
+    title: "Terminal Kappa — Semboyan Perjuangan",
+    subtitle: "Kalimat terakhir sang Kapitan",
+    context: "Sebelum dihukum gantung, Kapitan Pattimura mengucapkan kalimat penuh keberanian yang kemudian menjadi semboyan perjuangan rakyat Maluku melawan penjajahan.",
+    question: "Apa semboyan terkenal dari Kapitan Pattimura?",
+    answers: [
+      "A. \"Merdeka atau mati!\"",
+      "B. \"Lebih baik mati daripada dijajah!\"",
+      "C. \"Bersatu kita teguh!\"",
+      "D. \"Maju tak gentar!\"",
+    ],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! \"Lebih baik mati daripada dijajah!\"",
+    feedbackWrong: "✗ Salah. Semboyannya: \"Lebih baik mati daripada dijajah!\"",
+  },
+);
+
 const DIALOGS: Record<string, DialogStep[]> = {
   mission_brief: [
     { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
@@ -158,11 +250,14 @@ const DIALOGS: Record<string, DialogStep[]> = {
     { speaker: "SISTEM", portrait: "system", text: "✓ Terminal ini sudah berhasil diakses sebelumnya." },
   ],
   exit_locked: [
-    { speaker: "SISTEM", portrait: "system", text: "⚠ Portal keluar masih terkunci. Selesaikan semua 3 terminal sejarah!" },
+    { speaker: "SISTEM", portrait: "system", text: "⚠ Portal keluar masih terkunci. Jawab semua 10 pertanyaan terlebih dahulu!" },
   ],
   exit_open: [
     { speaker: "SISTEM", portrait: "system",
-      text: "✓ Semua puzzle selesai! Portal keluar aktif. Kamu membawa semangat Pattimura & Martha ke dunia nyata!" },
+      text: "✓ Semua pertanyaan selesai! Portal keluar aktif. Kamu membawa semangat Pattimura & Martha!" },
+  ],
+  all_done: [
+    { speaker: "SISTEM", portrait: "system", text: "✓ Semua pertanyaan sudah dijawab. Menuju portal EXIT (kanan-bawah)!" },
   ],
 };
 
@@ -178,6 +273,44 @@ function isWalkable(doorsOpen: boolean[], col: number, row: number): boolean {
   // NPCs, terminals are blocking
   if (tile === 4 || tile === 5 || tile === 6) return false;
   return true;
+}
+
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60).toString().padStart(2, "0");
+  const s = (total % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+// Lightweight WebAudio SFX — no assets, only triggers after user interaction.
+let _audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  try {
+    if (!_audioCtx) {
+      const Ctor = (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
+      _audioCtx = new Ctor();
+    }
+    if (_audioCtx.state === "suspended") void _audioCtx.resume();
+    return _audioCtx;
+  } catch { return null; }
+}
+function playSfx(kind: "correct" | "wrong" | "open" | "win") {
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const now = ctx.currentTime;
+  const tone = (freq: number, start: number, dur: number, type: OscillatorType = "sine", vol = 0.18) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, now + start);
+    g.gain.setValueAtTime(0, now + start);
+    g.gain.linearRampToValueAtTime(vol, now + start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(now + start); o.stop(now + start + dur + 0.02);
+  };
+  if (kind === "correct") { tone(660, 0, 0.12, "triangle"); tone(880, 0.1, 0.18, "triangle"); tone(1320, 0.22, 0.22, "triangle"); }
+  else if (kind === "wrong") { tone(220, 0, 0.18, "square", 0.14); tone(150, 0.18, 0.28, "square", 0.14); }
+  else if (kind === "open") { tone(520, 0, 0.08, "sine", 0.12); }
+  else if (kind === "win") { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.22, "triangle")); }
 }
 
 // ============= Renderer =============
@@ -287,8 +420,7 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
           break;
         }
         case 4: {
-          const pid = TERMINAL_PUZZLE_MAP[key];
-          drawTerminal(ctx, px, py, pid !== undefined && state.puzzlesSolved[pid]);
+          drawTerminal(ctx, px, py, state.totalAnswered >= TOTAL_QUESTIONS);
           break;
         }
         case 5: drawPattimura(ctx, px, py); break;
@@ -308,12 +440,14 @@ const initialState: GameState = {
   gameStarted: false,
   missionStarted: false,
   metPattimura: false, metMartha: false,
-  puzzlesSolved: [false, false, false],
+  puzzlesAnswered: Array(TOTAL_QUESTIONS).fill(false),
+  score: 0, totalAnswered: 0,
+  startedAt: null, elapsedMs: 0,
   doorsOpen: [true, true, true, true, true, true, true, true, true, true],
   exitUnlocked: false, gameWon: false,
   dialogActive: false, currentDialog: null, dialogStepIndex: 0,
   puzzleActive: false, currentPuzzleId: null,
-  puzzleAnswered: false, selectedAnswer: null,
+  puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null,
   hintText: "WASD / Panah = Gerak  |  E / Spasi = Interaksi",
 };
 
@@ -352,30 +486,39 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, dialogStepIndex: next };
     }
     case "OPEN_PUZZLE":
-      return { ...state, puzzleActive: true, currentPuzzleId: action.puzzleId, puzzleAnswered: false, selectedAnswer: null };
+      return { ...state, puzzleActive: true, currentPuzzleId: action.puzzleId, puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null };
     case "ANSWER_PUZZLE": {
       if (state.currentPuzzleId === null) return state;
       const p = PUZZLES[state.currentPuzzleId];
+      if (state.puzzleAnswered) return state;
       const correct = action.answerIndex === p.correctIndex;
-      if (!correct) return { ...state, selectedAnswer: action.answerIndex, puzzleAnswered: false };
-      const newSolved = [...state.puzzlesSolved];
-      newSolved[state.currentPuzzleId] = true;
-      const newDoors = [...state.doorsOpen];
-      (PUZZLE_DOOR_LINKS[state.currentPuzzleId] ?? []).forEach((id) => { newDoors[id] = true; });
+      const newAnswered = [...state.puzzlesAnswered];
+      const wasAnswered = newAnswered[state.currentPuzzleId];
+      newAnswered[state.currentPuzzleId] = true;
+      const newTotal = wasAnswered ? state.totalAnswered : state.totalAnswered + 1;
+      const newScore = correct && !wasAnswered ? state.score + 1 : state.score;
       return {
-        ...state, puzzleAnswered: true, selectedAnswer: action.answerIndex,
-        puzzlesSolved: newSolved, doorsOpen: newDoors,
-        exitUnlocked: newSolved.every(Boolean),
+        ...state,
+        puzzleAnswered: true,
+        lastAnswerCorrect: correct,
+        selectedAnswer: action.answerIndex,
+        puzzlesAnswered: newAnswered,
+        totalAnswered: newTotal,
+        score: newScore,
+        exitUnlocked: newTotal >= TOTAL_QUESTIONS,
       };
     }
     case "CLOSE_PUZZLE":
-      return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, selectedAnswer: null };
+      return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null };
     case "WIN_GAME":
       return { ...state, gameWon: true };
     case "START_GAME":
-      return { ...state, gameStarted: true };
+      return { ...state, gameStarted: true, startedAt: state.startedAt ?? Date.now() };
     case "START_MISSION":
       return { ...state, missionStarted: true, metPattimura: true };
+    case "TICK_TIMER":
+      if (!state.startedAt || state.gameWon) return state;
+      return { ...state, elapsedMs: action.now - state.startedAt };
     case "SET_HINT":
       return { ...state, hintText: action.text };
     case "LOAD_SAVE":
@@ -406,11 +549,13 @@ export function PattimuraQuest() {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         gameStarted: state.gameStarted, missionStarted: state.missionStarted,
         metPattimura: state.metPattimura, metMartha: state.metMartha,
-        puzzlesSolved: state.puzzlesSolved, doorsOpen: state.doorsOpen,
+        puzzlesAnswered: state.puzzlesAnswered, doorsOpen: state.doorsOpen,
+        score: state.score, totalAnswered: state.totalAnswered,
+        startedAt: state.startedAt, elapsedMs: state.elapsedMs,
         exitUnlocked: state.exitUnlocked, player: state.player,
       }));
     } catch {}
-  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
+  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesAnswered, state.doorsOpen, state.score, state.totalAnswered, state.exitUnlocked, state.player]);
 
   const handleInteract = useCallback(() => {
     const s = stateRef.current;
@@ -438,10 +583,14 @@ export function PattimuraQuest() {
     }
     if (tile === 4) {
       if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
-      const pid = TERMINAL_PUZZLE_MAP[key];
-      if (pid === undefined) return;
-      if (s.puzzlesSolved[pid]) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved }); return; }
-      dispatch({ type: "OPEN_PUZZLE", puzzleId: pid });
+      void key;
+      const nextId = s.puzzlesAnswered.findIndex((a) => !a);
+      if (nextId === -1) {
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.all_done });
+        return;
+      }
+      playSfx("open");
+      dispatch({ type: "OPEN_PUZZLE", puzzleId: nextId });
       return;
     }
     if (tile === 7) {
@@ -467,6 +616,22 @@ export function PattimuraQuest() {
       window.removeEventListener("keyup", up);
     };
   }, [handleInteract]);
+
+  // Timer tick
+  useEffect(() => {
+    if (!state.gameStarted || state.gameWon) return;
+    const id = setInterval(() => dispatch({ type: "TICK_TIMER", now: Date.now() }), 500);
+    return () => clearInterval(id);
+  }, [state.gameStarted, state.gameWon]);
+
+  // Sound on answer
+  useEffect(() => {
+    if (state.lastAnswerCorrect === null) return;
+    playSfx(state.lastAnswerCorrect ? "correct" : "wrong");
+  }, [state.lastAnswerCorrect, state.totalAnswered]);
+
+  // Sound on win
+  useEffect(() => { if (state.gameWon) playSfx("win"); }, [state.gameWon]);
 
   // Game loop
   useEffect(() => {
@@ -521,23 +686,23 @@ export function PattimuraQuest() {
             {!state.missionStarted
               ? "🎯 Cari Kapitan Pattimura (sosok merah-emas) dan tekan E untuk memulai misi"
               : state.exitUnlocked
-                ? "✓ Semua puzzle selesai — menuju portal EXIT (kanan-bawah)"
-                : "Misi aktif: temukan & jawab 3 terminal sejarah (α β γ)"}
+              ? "✓ Semua pertanyaan selesai — menuju portal EXIT (kanan-bawah)"
+              : `Misi aktif: jawab ${TOTAL_QUESTIONS} pertanyaan di terminal sejarah`}
           </p>
         </div>
 
         {/* HUD */}
         <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-          <div className="flex gap-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={`px-3 py-1.5 rounded-md border text-xs font-mono tracking-wider ${
-                state.puzzlesSolved[i]
-                  ? "border-gold bg-gold/20 text-gold"
-                  : "border-border bg-background/60 text-beige/40"
-              }`}>
-                {state.puzzlesSolved[i] ? "✓" : "○"} TERMINAL {["α","β","γ"][i]}
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <div className="px-3 py-1.5 rounded-md border border-gold bg-gold/10 text-gold text-xs font-mono tracking-wider">
+              ⭐ SCORE: {state.score} / {state.totalAnswered}
+            </div>
+            <div className="px-3 py-1.5 rounded-md border border-border bg-background/60 text-beige text-xs font-mono tracking-wider">
+              📋 {state.totalAnswered} / {TOTAL_QUESTIONS} DIJAWAB
+            </div>
+            <div className="px-3 py-1.5 rounded-md border border-border bg-background/60 text-beige text-xs font-mono tracking-wider">
+              ⏱ {formatTime(state.elapsedMs)}
+            </div>
           </div>
           <button onClick={reset} className="px-3 py-1.5 rounded-full border border-border text-beige/80 text-xs hover:bg-background/60">
             ⟲ Reset
@@ -611,6 +776,7 @@ export function PattimuraQuest() {
                 <PuzzleOverlay
                   puzzle={currentPuzzle}
                   answered={state.puzzleAnswered}
+                  lastAnswerCorrect={state.lastAnswerCorrect}
                   selectedAnswer={state.selectedAnswer}
                   onAnswer={(i) => dispatch({ type: "ANSWER_PUZZLE", answerIndex: i })}
                   onClose={() => dispatch({ type: "CLOSE_PUZZLE" })}
@@ -634,6 +800,14 @@ export function PattimuraQuest() {
                   <p className="text-beige mb-2">Kamu berhasil keluar dari dunia digital</p>
                   <p className="text-beige mb-2">dengan membawa semangat perjuangan</p>
                   <p className="text-gold font-bold text-lg mb-4">Pattimura & Martha Christina Tiahahu</p>
+                  <div className="flex flex-wrap gap-3 justify-center mb-5">
+                    <div className="px-4 py-2 rounded-lg border border-gold bg-gold/10 text-gold font-mono">
+                      ⭐ Skor: <span className="font-bold">{state.score} / {TOTAL_QUESTIONS}</span>
+                    </div>
+                    <div className="px-4 py-2 rounded-lg border border-border bg-background/60 text-beige font-mono">
+                      ⏱ Waktu: <span className="font-bold">{formatTime(state.elapsedMs)}</span>
+                    </div>
+                  </div>
                   <p className="italic text-beige/80 mb-6">"Lebih baik mati daripada dijajah!"</p>
                   <button onClick={reset}
                     className="bg-gradient-gold text-maroon-deep font-bold px-8 py-3 rounded-full tracking-widest uppercase text-sm hover:scale-105 transition-transform">
@@ -696,8 +870,8 @@ function DialogBox({ step, onContinue }: { step: DialogStep; onContinue: () => v
   );
 }
 
-function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: {
-  puzzle: PuzzleData; answered: boolean; selectedAnswer: number | null;
+function PuzzleOverlay({ puzzle, answered, lastAnswerCorrect, selectedAnswer, onAnswer, onClose }: {
+  puzzle: PuzzleData; answered: boolean; lastAnswerCorrect: boolean | null; selectedAnswer: number | null;
   onAnswer: (i: number) => void; onClose: () => void;
 }) {
   return (
@@ -715,9 +889,11 @@ function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: 
       <div className="space-y-2 mb-4">
         {puzzle.answers.map((ans, i) => {
           const isSel = selectedAnswer === i;
+          const isCorrectAns = i === puzzle.correctIndex;
           let cls = "w-full text-left px-4 py-3 rounded-lg text-sm border font-mono transition-all ";
-          if (isSel && answered) cls += "bg-[#1a3a1a] border-[#4caf50] text-[#4caf50]";
-          else if (isSel && !answered) cls += "bg-[#3a1a1a] border-[#e53935] text-[#e53935]";
+          if (answered && isCorrectAns) cls += "bg-[#1a3a1a] border-[#4caf50] text-[#4caf50]";
+          else if (answered && isSel && !isCorrectAns) cls += "bg-[#3a1a1a] border-[#e53935] text-[#e53935]";
+          else if (answered) cls += "bg-[#0a1a2e]/40 border-border text-beige/40";
           else cls += "bg-[#0a1a2e] border-[#3a6e8c] text-beige hover:border-gold hover:bg-[#1a2e42]";
           return (
             <motion.button key={i}
@@ -729,10 +905,10 @@ function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: 
         })}
       </div>
       <AnimatePresence>
-        {selectedAnswer !== null && (
+        {answered && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className={`p-3 rounded-lg text-sm mb-3 ${answered ? "bg-[#1a3a1a] text-[#7fffa3]" : "bg-[#3a1a1a] text-[#ff9999]"}`}>
-            {answered ? puzzle.feedbackCorrect : puzzle.feedbackWrong}
+            className={`p-3 rounded-lg text-sm mb-3 ${lastAnswerCorrect ? "bg-[#1a3a1a] text-[#7fffa3]" : "bg-[#3a1a1a] text-[#ff9999]"}`}>
+            {lastAnswerCorrect ? puzzle.feedbackCorrect : puzzle.feedbackWrong}
           </motion.div>
         )}
       </AnimatePresence>
