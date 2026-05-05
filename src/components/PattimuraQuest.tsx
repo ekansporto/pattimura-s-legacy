@@ -120,6 +120,18 @@ const PUZZLES: PuzzleData[] = [
 ];
 
 const DIALOGS: Record<string, DialogStep[]> = {
+  mission_brief: [
+    { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
+      text: "Hai Anak Muda! Aku Thomas Matulessy — Kapitan Pattimura. Kamu terjebak di dunia digital ini." },
+    { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
+      text: "Misimu: temukan 3 terminal sejarah (α, β, γ), jawab tantangannya. Tiap jawaban benar membuka pintu menuju portal keluar." },
+    { speaker: "SISTEM", portrait: "system",
+      text: "✓ Misi diaktifkan! Terminal kini bisa diakses. Ilmu adalah kuncimu." },
+  ],
+  no_mission: [
+    { speaker: "SISTEM", portrait: "system",
+      text: "⚠ Selesaikan tugas dulu — bicara dengan Kapitan Pattimura (sosok berbaju merah-emas) untuk memulai misi." },
+  ],
   pattimura_intro: [
     { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
       text: "Hai, Anak Muda! Kamu terjebak di dunia digital ini? Tenang, aku Thomas Matulessy — Kapitan Pattimura. Aku akan membimbingmu keluar." },
