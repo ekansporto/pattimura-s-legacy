@@ -305,6 +305,8 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
 // ============= Reducer =============
 const initialState: GameState = {
   player: { x: 1, y: 1, facing: "down", walkFrame: 0, walkTimer: 0 },
+  gameStarted: false,
+  missionStarted: false,
   metPattimura: false, metMartha: false,
   puzzlesSolved: [false, false, false],
   doorsOpen: [false, false, false, false, false, false, false, false, false, false],
@@ -370,6 +372,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, selectedAnswer: null };
     case "WIN_GAME":
       return { ...state, gameWon: true };
+    case "START_GAME":
+      return { ...state, gameStarted: true };
+    case "START_MISSION":
+      return { ...state, missionStarted: true, metPattimura: true };
     case "SET_HINT":
       return { ...state, hintText: action.text };
     case "LOAD_SAVE":
