@@ -485,6 +485,12 @@ export function PattimuraQuest() {
         if (k.has("arrowdown") || k.has("s")) dy = speed * delta;
         if (dx !== 0) dispatch({ type: "MOVE_PLAYER", dx, dy: 0, delta });
         if (dy !== 0) dispatch({ type: "MOVE_PLAYER", dx: 0, dy, delta });
+        // Auto-win when stepping on exit tile
+        const pCol = Math.round(s.player.x);
+        const pRow = Math.round(s.player.y);
+        if (s.exitUnlocked && MAP_RAW[pRow]?.[pCol] === 7) {
+          dispatch({ type: "WIN_GAME" });
+        }
       }
       const c = canvasRef.current; if (c) { const ctx = c.getContext("2d"); if (ctx) renderFrame(ctx, s); }
       raf = requestAnimationFrame(loop);
