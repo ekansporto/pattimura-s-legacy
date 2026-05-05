@@ -776,6 +776,7 @@ export function PattimuraQuest() {
                 <PuzzleOverlay
                   puzzle={currentPuzzle}
                   answered={state.puzzleAnswered}
+                  lastAnswerCorrect={state.lastAnswerCorrect}
                   selectedAnswer={state.selectedAnswer}
                   onAnswer={(i) => dispatch({ type: "ANSWER_PUZZLE", answerIndex: i })}
                   onClose={() => dispatch({ type: "CLOSE_PUZZLE" })}
@@ -869,8 +870,8 @@ function DialogBox({ step, onContinue }: { step: DialogStep; onContinue: () => v
   );
 }
 
-function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: {
-  puzzle: PuzzleData; answered: boolean; selectedAnswer: number | null;
+function PuzzleOverlay({ puzzle, answered, lastAnswerCorrect, selectedAnswer, onAnswer, onClose }: {
+  puzzle: PuzzleData; answered: boolean; lastAnswerCorrect: boolean | null; selectedAnswer: number | null;
   onAnswer: (i: number) => void; onClose: () => void;
 }) {
   return (
@@ -888,9 +889,11 @@ function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: 
       <div className="space-y-2 mb-4">
         {puzzle.answers.map((ans, i) => {
           const isSel = selectedAnswer === i;
+          const isCorrectAns = i === puzzle.correctIndex;
           let cls = "w-full text-left px-4 py-3 rounded-lg text-sm border font-mono transition-all ";
-          if (isSel && answered) cls += "bg-[#1a3a1a] border-[#4caf50] text-[#4caf50]";
-          else if (isSel && !answered) cls += "bg-[#3a1a1a] border-[#e53935] text-[#e53935]";
+          if (answered && isCorrectAns) cls += "bg-[#1a3a1a] border-[#4caf50] text-[#4caf50]";
+          else if (answered && isSel && !isCorrectAns) cls += "bg-[#3a1a1a] border-[#e53935] text-[#e53935]";
+          else if (answered) cls += "bg-[#0a1a2e]/40 border-border text-beige/40";
           else cls += "bg-[#0a1a2e] border-[#3a6e8c] text-beige hover:border-gold hover:bg-[#1a2e42]";
           return (
             <motion.button key={i}
@@ -902,10 +905,10 @@ function PuzzleOverlay({ puzzle, answered, selectedAnswer, onAnswer, onClose }: 
         })}
       </div>
       <AnimatePresence>
-        {selectedAnswer !== null && (
+        {answered && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className={`p-3 rounded-lg text-sm mb-3 ${answered ? "bg-[#1a3a1a] text-[#7fffa3]" : "bg-[#3a1a1a] text-[#ff9999]"}`}>
-            {answered ? puzzle.feedbackCorrect : puzzle.feedbackWrong}
+            className={`p-3 rounded-lg text-sm mb-3 ${lastAnswerCorrect ? "bg-[#1a3a1a] text-[#7fffa3]" : "bg-[#3a1a1a] text-[#ff9999]"}`}>
+            {lastAnswerCorrect ? puzzle.feedbackCorrect : puzzle.feedbackWrong}
           </motion.div>
         )}
       </AnimatePresence>
