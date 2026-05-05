@@ -31,10 +31,10 @@ const DOOR_POSITIONS: Record<string, number> = {
   "6_3": 0, "3_5": 1, "11_4": 2, "9_7": 3, "13_7": 4,
   "2_9": 5, "4_11": 6, "17_6": 7, "15_10": 8, "17_12": 9,
 };
+// Doors are open from the start so the player can explore freely.
+// Only the EXIT tile is gated — unlocks after all 3 terminals are solved.
 const PUZZLE_DOOR_LINKS: Record<number, number[]> = {
-  0: [0, 7],
-  1: [1, 5, 6],
-  2: [2, 3, 4, 8, 9],
+  0: [], 1: [], 2: [],
 };
 const TERMINAL_PUZZLE_MAP: Record<string, number> = {
   "16_3": 0, "2_7": 1, "17_8": 2,
@@ -309,7 +309,7 @@ const initialState: GameState = {
   missionStarted: false,
   metPattimura: false, metMartha: false,
   puzzlesSolved: [false, false, false],
-  doorsOpen: [false, false, false, false, false, false, false, false, false, false],
+  doorsOpen: [true, true, true, true, true, true, true, true, true, true],
   exitUnlocked: false, gameWon: false,
   dialogActive: false, currentDialog: null, dialogStepIndex: 0,
   puzzleActive: false, currentPuzzleId: null,
