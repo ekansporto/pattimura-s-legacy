@@ -404,12 +404,13 @@ export function PattimuraQuest() {
   useEffect(() => {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
+        gameStarted: state.gameStarted, missionStarted: state.missionStarted,
         metPattimura: state.metPattimura, metMartha: state.metMartha,
         puzzlesSolved: state.puzzlesSolved, doorsOpen: state.doorsOpen,
         exitUnlocked: state.exitUnlocked, player: state.player,
       }));
     } catch {}
-  }, [state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
+  }, [state.gameStarted, state.missionStarted, state.metPattimura, state.metMartha, state.puzzlesSolved, state.doorsOpen, state.exitUnlocked, state.player]);
 
   const handleInteract = useCallback(() => {
     const s = stateRef.current;
@@ -474,7 +475,7 @@ export function PattimuraQuest() {
       const delta = lastTimeRef.current ? ts - lastTimeRef.current : 16;
       lastTimeRef.current = ts;
       const s = stateRef.current;
-      if (!s.dialogActive && !s.puzzleActive && !s.gameWon) {
+      if (s.gameStarted && !s.dialogActive && !s.puzzleActive && !s.gameWon) {
         const speed = 4 / 1000;
         const k = keysRef.current;
         let dx = 0, dy = 0;
