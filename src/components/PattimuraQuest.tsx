@@ -617,6 +617,22 @@ export function PattimuraQuest() {
     };
   }, [handleInteract]);
 
+  // Timer tick
+  useEffect(() => {
+    if (!state.gameStarted || state.gameWon) return;
+    const id = setInterval(() => dispatch({ type: "TICK_TIMER", now: Date.now() }), 500);
+    return () => clearInterval(id);
+  }, [state.gameStarted, state.gameWon]);
+
+  // Sound on answer
+  useEffect(() => {
+    if (state.lastAnswerCorrect === null) return;
+    playSfx(state.lastAnswerCorrect ? "correct" : "wrong");
+  }, [state.lastAnswerCorrect, state.totalAnswered]);
+
+  // Sound on win
+  useEffect(() => { if (state.gameWon) playSfx("win"); }, [state.gameWon]);
+
   // Game loop
   useEffect(() => {
     let raf = 0;
@@ -783,6 +799,14 @@ export function PattimuraQuest() {
                   <p className="text-beige mb-2">Kamu berhasil keluar dari dunia digital</p>
                   <p className="text-beige mb-2">dengan membawa semangat perjuangan</p>
                   <p className="text-gold font-bold text-lg mb-4">Pattimura & Martha Christina Tiahahu</p>
+                  <div className="flex flex-wrap gap-3 justify-center mb-5">
+                    <div className="px-4 py-2 rounded-lg border border-gold bg-gold/10 text-gold font-mono">
+                      ⭐ Skor: <span className="font-bold">{state.score} / {TOTAL_QUESTIONS}</span>
+                    </div>
+                    <div className="px-4 py-2 rounded-lg border border-border bg-background/60 text-beige font-mono">
+                      ⏱ Waktu: <span className="font-bold">{formatTime(state.elapsedMs)}</span>
+                    </div>
+                  </div>
                   <p className="italic text-beige/80 mb-6">"Lebih baik mati daripada dijajah!"</p>
                   <button onClick={reset}
                     className="bg-gradient-gold text-maroon-deep font-bold px-8 py-3 rounded-full tracking-widest uppercase text-sm hover:scale-105 transition-transform">
