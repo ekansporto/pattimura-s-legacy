@@ -293,24 +293,6 @@ function Index() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 px-6 text-center">
-        <Reveal>
-          <h2 className="font-serif-display text-3xl sm:text-5xl text-beige max-w-3xl mx-auto">
-            Sudah siap menguji pengetahuanmu?
-          </h2>
-          <p className="text-muted-foreground mt-4 max-w-xl mx-auto">
-            Mainkan kuis interaktif tentang sejarah perjuangan pahlawan Maluku.
-          </p>
-          <Link
-            to="/kuis"
-            className="inline-block mt-8 px-10 py-4 rounded-full bg-gradient-gold text-maroon-deep font-bold tracking-wide shadow-glow hover:scale-105 transition-transform"
-          >
-            Mulai Kuis →
-          </Link>
-        </Reveal>
-      </section>
-
       <footer className="py-10 border-t border-border text-center text-muted-foreground text-sm">
         © {new Date().getFullYear()} Pahlawan Maluku · Untuk mengenang jasa para pejuang.
       </footer>
