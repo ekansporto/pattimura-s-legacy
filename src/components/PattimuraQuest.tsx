@@ -31,14 +31,8 @@ const DOOR_POSITIONS: Record<string, number> = {
   "6_3": 0, "3_5": 1, "11_4": 2, "9_7": 3, "13_7": 4,
   "2_9": 5, "4_11": 6, "17_6": 7, "15_10": 8, "17_12": 9,
 };
-// Doors are open from the start so the player can explore freely.
-// Only the EXIT tile is gated — unlocks after all 3 terminals are solved.
-const PUZZLE_DOOR_LINKS: Record<number, number[]> = {
-  0: [], 1: [], 2: [],
-};
-const TERMINAL_PUZZLE_MAP: Record<string, number> = {
-  "16_3": 0, "2_7": 1, "17_8": 2,
-};
+// Doors are open from the start. Exit unlocks after ALL 10 questions answered.
+const TOTAL_QUESTIONS = 10;
 
 // ============= Types =============
 type Direction = "up" | "down" | "left" | "right";
@@ -54,11 +48,13 @@ interface GameState {
   gameStarted: boolean;
   missionStarted: boolean;
   metPattimura: boolean; metMartha: boolean;
-  puzzlesSolved: boolean[]; doorsOpen: boolean[];
+  puzzlesAnswered: boolean[]; doorsOpen: boolean[];
+  score: number; totalAnswered: number;
+  startedAt: number | null; elapsedMs: number;
   exitUnlocked: boolean; gameWon: boolean;
   dialogActive: boolean; currentDialog: DialogStep[] | null; dialogStepIndex: number;
   puzzleActive: boolean; currentPuzzleId: number | null;
-  puzzleAnswered: boolean; selectedAnswer: number | null;
+  puzzleAnswered: boolean; lastAnswerCorrect: boolean | null; selectedAnswer: number | null;
   hintText: string;
 }
 type GameAction =
@@ -71,6 +67,7 @@ type GameAction =
   | { type: "WIN_GAME" }
   | { type: "START_GAME" }
   | { type: "START_MISSION" }
+  | { type: "TICK_TIMER"; now: number }
   | { type: "SET_HINT"; text: string }
   | { type: "LOAD_SAVE"; savedState: Partial<GameState> };
 
@@ -119,6 +116,101 @@ const PUZZLES: PuzzleData[] = [
   },
 ];
 
+PUZZLES.push(
+  {
+    id: 3,
+    title: "Terminal Delta — Benteng Duurstede",
+    subtitle: "Identifikasi lokasi pertempuran",
+    context: "Benteng Duurstede adalah benteng peninggalan VOC yang terletak di Pulau Saparua, Maluku Tengah. Benteng ini menjadi target utama serangan rakyat Maluku pada 16 Mei 1817 di bawah pimpinan Kapitan Pattimura.",
+    question: "Di pulau manakah Benteng Duurstede terletak?",
+    answers: ["A. Ambon", "B. Saparua", "C. Seram", "D. Banda"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Tepat! Benteng Duurstede ada di Pulau Saparua.",
+    feedbackWrong: "✗ Salah. Benteng Duurstede terletak di Saparua.",
+  },
+  {
+    id: 4,
+    title: "Terminal Epsilon — Akhir Hidup Pattimura",
+    subtitle: "Catat tanggal eksekusi",
+    context: "Setelah ditangkap pasukan Belanda, Kapitan Pattimura diadili dan dijatuhi hukuman mati. Ia dihukum gantung di depan Benteng Nieuw Victoria, Ambon, pada 16 Desember 1817.",
+    question: "Bagaimana Pattimura menemui akhir hidupnya?",
+    answers: [
+      "A. Tewas di medan perang Saparua",
+      "B. Dihukum gantung di Ambon, 16 Desember 1817",
+      "C. Dibuang ke Pulau Banda hingga wafat",
+      "D. Ditembak mati di kapal VOC",
+    ],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Pattimura digantung di Ambon, 16 Desember 1817.",
+    feedbackWrong: "✗ Kurang tepat. Ia dihukum gantung di Ambon.",
+  },
+  {
+    id: 5,
+    title: "Terminal Zeta — Ayah Martha",
+    subtitle: "Verifikasi silsilah pejuang",
+    context: "Martha Christina Tiahahu adalah putri Kapitan Paulus Tiahahu, seorang pemimpin perlawanan dari Nusalaut yang juga turut berjuang bersama Pattimura.",
+    question: "Siapa nama ayah Martha Christina Tiahahu?",
+    answers: ["A. Thomas Matulessy", "B. Kapitan Paulus Tiahahu", "C. Said Perintah", "D. Anthony Rhebok"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Tepat! Ayahnya adalah Kapitan Paulus Tiahahu.",
+    feedbackWrong: "✗ Salah. Ayah Martha adalah Kapitan Paulus Tiahahu.",
+  },
+  {
+    id: 6,
+    title: "Terminal Eta — Senjata Tradisional",
+    subtitle: "Identifikasi persenjataan rakyat Maluku",
+    context: "Dalam perlawanan 1817, rakyat Maluku menggunakan senjata tradisional khas mereka — parang panjang dan perisai kayu — untuk melawan pasukan VOC yang bersenjata api.",
+    question: "Apa nama kombinasi senjata khas Maluku berupa parang dan perisai?",
+    answers: ["A. Keris & Tameng", "B. Parang Salawaku", "C. Tombak Cakalele", "D. Mandau & Klewang"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Parang Salawaku adalah senjata khas Maluku.",
+    feedbackWrong: "✗ Belum tepat. Jawabannya Parang Salawaku.",
+  },
+  {
+    id: 7,
+    title: "Terminal Theta — Asal Daerah Martha",
+    subtitle: "Tentukan tanah kelahiran",
+    context: "Martha Christina Tiahahu lahir pada 4 Januari 1800 di Desa Abubu, Pulau Nusalaut, Maluku. Ia tumbuh sebagai gadis pemberani yang menolak penjajahan sejak usia muda.",
+    question: "Di pulau manakah Martha Christina Tiahahu dilahirkan?",
+    answers: ["A. Saparua", "B. Nusalaut", "C. Haruku", "D. Ambon"],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! Martha lahir di Nusalaut.",
+    feedbackWrong: "✗ Salah. Martha lahir di Pulau Nusalaut.",
+  },
+  {
+    id: 8,
+    title: "Terminal Iota — Penyebab Perlawanan",
+    subtitle: "Analisis akar konflik",
+    context: "Kembalinya Belanda ke Maluku pasca-Inggris membawa kebijakan yang menyengsarakan: monopoli rempah, kerja paksa (rodi), pemotongan tunjangan guru, serta pengiriman pemuda Maluku menjadi serdadu di Jawa. Inilah yang memicu perlawanan 1817.",
+    question: "Manakah BUKAN penyebab perlawanan rakyat Maluku 1817?",
+    answers: [
+      "A. Monopoli rempah-rempah oleh Belanda",
+      "B. Kerja paksa (rodi)",
+      "C. Pemberian tanah luas kepada rakyat",
+      "D. Pengiriman pemuda Maluku ke Jawa",
+    ],
+    correctIndex: 2,
+    feedbackCorrect: "✓ Tepat! Belanda justru merampas, bukan memberi tanah.",
+    feedbackWrong: "✗ Kurang tepat. Belanda tidak memberi tanah kepada rakyat.",
+  },
+  {
+    id: 9,
+    title: "Terminal Kappa — Semboyan Perjuangan",
+    subtitle: "Kalimat terakhir sang Kapitan",
+    context: "Sebelum dihukum gantung, Kapitan Pattimura mengucapkan kalimat penuh keberanian yang kemudian menjadi semboyan perjuangan rakyat Maluku melawan penjajahan.",
+    question: "Apa semboyan terkenal dari Kapitan Pattimura?",
+    answers: [
+      "A. \"Merdeka atau mati!\"",
+      "B. \"Lebih baik mati daripada dijajah!\"",
+      "C. \"Bersatu kita teguh!\"",
+      "D. \"Maju tak gentar!\"",
+    ],
+    correctIndex: 1,
+    feedbackCorrect: "✓ Benar! \"Lebih baik mati daripada dijajah!\"",
+    feedbackWrong: "✗ Salah. Semboyannya: \"Lebih baik mati daripada dijajah!\"",
+  },
+);
+
 const DIALOGS: Record<string, DialogStep[]> = {
   mission_brief: [
     { speaker: "KAPITAN PATTIMURA", portrait: "pattimura",
@@ -158,11 +250,14 @@ const DIALOGS: Record<string, DialogStep[]> = {
     { speaker: "SISTEM", portrait: "system", text: "✓ Terminal ini sudah berhasil diakses sebelumnya." },
   ],
   exit_locked: [
-    { speaker: "SISTEM", portrait: "system", text: "⚠ Portal keluar masih terkunci. Selesaikan semua 3 terminal sejarah!" },
+    { speaker: "SISTEM", portrait: "system", text: "⚠ Portal keluar masih terkunci. Jawab semua 10 pertanyaan terlebih dahulu!" },
   ],
   exit_open: [
     { speaker: "SISTEM", portrait: "system",
-      text: "✓ Semua puzzle selesai! Portal keluar aktif. Kamu membawa semangat Pattimura & Martha ke dunia nyata!" },
+      text: "✓ Semua pertanyaan selesai! Portal keluar aktif. Kamu membawa semangat Pattimura & Martha!" },
+  ],
+  all_done: [
+    { speaker: "SISTEM", portrait: "system", text: "✓ Semua pertanyaan sudah dijawab. Menuju portal EXIT (kanan-bawah)!" },
   ],
 };
 
@@ -308,12 +403,14 @@ const initialState: GameState = {
   gameStarted: false,
   missionStarted: false,
   metPattimura: false, metMartha: false,
-  puzzlesSolved: [false, false, false],
+  puzzlesAnswered: Array(TOTAL_QUESTIONS).fill(false),
+  score: 0, totalAnswered: 0,
+  startedAt: null, elapsedMs: 0,
   doorsOpen: [true, true, true, true, true, true, true, true, true, true],
   exitUnlocked: false, gameWon: false,
   dialogActive: false, currentDialog: null, dialogStepIndex: 0,
   puzzleActive: false, currentPuzzleId: null,
-  puzzleAnswered: false, selectedAnswer: null,
+  puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null,
   hintText: "WASD / Panah = Gerak  |  E / Spasi = Interaksi",
 };
 
@@ -352,30 +449,39 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, dialogStepIndex: next };
     }
     case "OPEN_PUZZLE":
-      return { ...state, puzzleActive: true, currentPuzzleId: action.puzzleId, puzzleAnswered: false, selectedAnswer: null };
+      return { ...state, puzzleActive: true, currentPuzzleId: action.puzzleId, puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null };
     case "ANSWER_PUZZLE": {
       if (state.currentPuzzleId === null) return state;
       const p = PUZZLES[state.currentPuzzleId];
+      if (state.puzzleAnswered) return state;
       const correct = action.answerIndex === p.correctIndex;
-      if (!correct) return { ...state, selectedAnswer: action.answerIndex, puzzleAnswered: false };
-      const newSolved = [...state.puzzlesSolved];
-      newSolved[state.currentPuzzleId] = true;
-      const newDoors = [...state.doorsOpen];
-      (PUZZLE_DOOR_LINKS[state.currentPuzzleId] ?? []).forEach((id) => { newDoors[id] = true; });
+      const newAnswered = [...state.puzzlesAnswered];
+      const wasAnswered = newAnswered[state.currentPuzzleId];
+      newAnswered[state.currentPuzzleId] = true;
+      const newTotal = wasAnswered ? state.totalAnswered : state.totalAnswered + 1;
+      const newScore = correct && !wasAnswered ? state.score + 1 : state.score;
       return {
-        ...state, puzzleAnswered: true, selectedAnswer: action.answerIndex,
-        puzzlesSolved: newSolved, doorsOpen: newDoors,
-        exitUnlocked: newSolved.every(Boolean),
+        ...state,
+        puzzleAnswered: true,
+        lastAnswerCorrect: correct,
+        selectedAnswer: action.answerIndex,
+        puzzlesAnswered: newAnswered,
+        totalAnswered: newTotal,
+        score: newScore,
+        exitUnlocked: newTotal >= TOTAL_QUESTIONS,
       };
     }
     case "CLOSE_PUZZLE":
-      return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, selectedAnswer: null };
+      return { ...state, puzzleActive: false, currentPuzzleId: null, puzzleAnswered: false, lastAnswerCorrect: null, selectedAnswer: null };
     case "WIN_GAME":
       return { ...state, gameWon: true };
     case "START_GAME":
-      return { ...state, gameStarted: true };
+      return { ...state, gameStarted: true, startedAt: state.startedAt ?? Date.now() };
     case "START_MISSION":
       return { ...state, missionStarted: true, metPattimura: true };
+    case "TICK_TIMER":
+      if (!state.startedAt || state.gameWon) return state;
+      return { ...state, elapsedMs: action.now - state.startedAt };
     case "SET_HINT":
       return { ...state, hintText: action.text };
     case "LOAD_SAVE":
