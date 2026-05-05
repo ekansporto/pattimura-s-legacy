@@ -51,6 +51,8 @@ interface PuzzleData {
 }
 interface GameState {
   player: Player;
+  gameStarted: boolean;
+  missionStarted: boolean;
   metPattimura: boolean; metMartha: boolean;
   puzzlesSolved: boolean[]; doorsOpen: boolean[];
   exitUnlocked: boolean; gameWon: boolean;
@@ -67,6 +69,8 @@ type GameAction =
   | { type: "ANSWER_PUZZLE"; answerIndex: number }
   | { type: "CLOSE_PUZZLE" }
   | { type: "WIN_GAME" }
+  | { type: "START_GAME" }
+  | { type: "START_MISSION" }
   | { type: "SET_HINT"; text: string }
   | { type: "LOAD_SAVE"; savedState: Partial<GameState> };
 
