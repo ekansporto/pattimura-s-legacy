@@ -423,7 +423,12 @@ export function PattimuraQuest() {
     const tile = MAP_RAW[ty]?.[tx];
     const key = `${tx}_${ty}`;
     if (tile === 5) {
-      dispatch({ type: "OPEN_DIALOG", dialog: s.metPattimura ? DIALOGS.pattimura_revisit : DIALOGS.pattimura_intro, npc: "pattimura" });
+      if (!s.missionStarted) {
+        dispatch({ type: "START_MISSION" });
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.mission_brief, npc: "pattimura" });
+      } else {
+        dispatch({ type: "OPEN_DIALOG", dialog: s.metPattimura ? DIALOGS.pattimura_revisit : DIALOGS.pattimura_intro, npc: "pattimura" });
+      }
       return;
     }
     if (tile === 6) {
@@ -431,6 +436,7 @@ export function PattimuraQuest() {
       return;
     }
     if (tile === 4) {
+      if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
       const pid = TERMINAL_PUZZLE_MAP[key];
       if (pid === undefined) return;
       if (s.puzzlesSolved[pid]) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved }); return; }
