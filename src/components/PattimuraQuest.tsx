@@ -511,7 +511,13 @@ export function PattimuraQuest() {
         <div className="text-center mb-6">
           <p className="text-gold tracking-[0.4em] text-xs mb-2">— PATTIMURA QUEST —</p>
           <h2 className="font-serif-display text-3xl sm:text-4xl text-beige">Escape From Digital World</h2>
-          <p className="text-beige/70 text-sm mt-2">{state.hintText}</p>
+          <p className="text-beige/70 text-sm mt-2">
+            {!state.missionStarted
+              ? "🎯 Cari Kapitan Pattimura (sosok merah-emas) dan tekan E untuk memulai misi"
+              : state.exitUnlocked
+                ? "✓ Semua puzzle selesai — menuju portal EXIT (kanan-bawah)"
+                : "Misi aktif: temukan & jawab 3 terminal sejarah (α β γ)"}
+          </p>
         </div>
 
         {/* HUD */}
@@ -542,6 +548,38 @@ export function PattimuraQuest() {
             className="block w-full h-auto"
             style={{ imageRendering: "pixelated" }}
           />
+
+          {/* Intro overlay */}
+          <AnimatePresence>
+            {!state.gameStarted && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/90 flex items-center justify-center p-4 text-center"
+              >
+                <div className="max-w-md">
+                  <p className="text-gold tracking-[0.4em] text-xs mb-3">— MISI BARU —</p>
+                  <h3 className="font-serif-display text-2xl sm:text-3xl text-beige mb-3">
+                    Terjebak di Dunia Digital
+                  </h3>
+                  <p className="text-beige/80 text-sm leading-relaxed mb-5">
+                    Kamu terbangun di sebuah ruangan asing. Pintu-pintu terkunci.
+                    Carilah <span className="text-gold font-semibold">Kapitan Pattimura</span> di
+                    pojok kiri-atas peta dan tekan <kbd className="px-1.5 py-0.5 bg-gold/20 border border-gold/50 rounded text-gold text-xs">E</kbd> untuk
+                    menerima misi.
+                  </p>
+                  <button
+                    onClick={() => dispatch({ type: "START_GAME" })}
+                    className="bg-gradient-gold text-maroon-deep font-bold px-8 py-3 rounded-full tracking-widest uppercase text-sm hover:scale-105 transition-transform"
+                  >
+                    ► Mulai Petualangan
+                  </button>
+                  <p className="text-beige/50 text-[10px] mt-4 tracking-wider">
+                    WASD/Panah = gerak · E/Spasi = interaksi
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Dialog */}
           <AnimatePresence>
