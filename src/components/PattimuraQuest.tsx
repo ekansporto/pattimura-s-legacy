@@ -432,7 +432,9 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
           break;
         }
         case 4: {
-          drawTerminal(ctx, px, py, state.totalAnswered >= TOTAL_QUESTIONS);
+          const qid = TERMINAL_QUESTIONS[key];
+          const solved = qid !== undefined && state.puzzlesAnswered[qid];
+          drawTerminal(ctx, px, py, solved);
           break;
         }
         case 5: drawPattimura(ctx, px, py); break;
@@ -595,14 +597,14 @@ export function PattimuraQuest() {
     }
     if (tile === 4) {
       if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
-      void key;
-      const nextId = s.puzzlesAnswered.findIndex((a) => !a);
-      if (nextId === -1) {
-        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.all_done });
+      const qid = TERMINAL_QUESTIONS[key];
+      if (qid === undefined) return;
+      if (s.puzzlesAnswered[qid]) {
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved });
         return;
       }
       playSfx("open");
-      dispatch({ type: "OPEN_PUZZLE", puzzleId: nextId });
+      dispatch({ type: "OPEN_PUZZLE", puzzleId: qid });
       return;
     }
     if (tile === 7) {
