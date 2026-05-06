@@ -11,18 +11,18 @@ const SAVE_KEY = "pattimura_quest_v1";
 
 const MAP_RAW: number[][] = [
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,4,0,1,0,0,0,0,0,0,0,0,4,0,0,0,1],
   [1,0,5,0,0,0,1,0,8,0,0,0,0,8,0,0,0,0,0,1],
-  [1,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,4,0,0,1],
+  [1,0,0,0,0,0,2,0,0,0,0,0,4,0,0,0,4,0,0,1],
   [1,0,0,0,0,0,1,0,0,1,1,2,1,1,0,0,0,0,0,1],
   [1,1,1,2,1,1,1,0,0,1,0,0,0,1,0,0,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,1,0,6,0,1,0,1,1,2,1,1],
+  [1,0,0,0,4,0,0,0,0,1,0,6,0,1,0,1,1,2,1,1],
   [1,0,4,0,0,0,0,0,0,2,0,0,0,2,0,1,0,0,0,1],
-  [1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,0,4,0,1],
+  [1,0,0,0,0,0,0,4,0,1,0,4,0,1,0,1,0,4,0,1],
   [1,1,2,1,1,0,0,0,0,1,1,1,1,1,0,1,0,0,0,1],
   [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1],
   [1,0,8,0,2,0,8,0,0,0,0,0,8,0,0,1,0,0,0,1],
-  [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,1],
+  [1,0,0,0,1,0,0,0,0,4,0,0,0,0,0,1,1,2,1,1],
   [1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,7,1],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
 ];
@@ -31,8 +31,20 @@ const DOOR_POSITIONS: Record<string, number> = {
   "6_3": 0, "3_5": 1, "11_4": 2, "9_7": 3, "13_7": 4,
   "2_9": 5, "4_11": 6, "17_6": 7, "15_10": 8, "17_12": 9,
 };
-// Doors are open from the start. Exit unlocks after ALL 10 questions answered.
 const TOTAL_QUESTIONS = 10;
+// Each terminal coordinate maps to a FIXED puzzle id (0..9). One terminal = one question.
+const TERMINAL_QUESTIONS: Record<string, number> = {
+  "16_3": 0,
+  "2_7":  1,
+  "17_8": 2,
+  "4_1":  3,
+  "15_1": 4,
+  "12_3": 5,
+  "4_6":  6,
+  "7_8":  7,
+  "11_8": 8,
+  "9_12": 9,
+};
 
 // ============= Types =============
 type Direction = "up" | "down" | "left" | "right";
@@ -420,7 +432,9 @@ function renderFrame(ctx: CanvasRenderingContext2D, state: GameState) {
           break;
         }
         case 4: {
-          drawTerminal(ctx, px, py, state.totalAnswered >= TOTAL_QUESTIONS);
+          const qid = TERMINAL_QUESTIONS[key];
+          const solved = qid !== undefined && state.puzzlesAnswered[qid];
+          drawTerminal(ctx, px, py, solved);
           break;
         }
         case 5: drawPattimura(ctx, px, py); break;
@@ -583,14 +597,14 @@ export function PattimuraQuest() {
     }
     if (tile === 4) {
       if (!s.missionStarted) { dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.no_mission }); return; }
-      void key;
-      const nextId = s.puzzlesAnswered.findIndex((a) => !a);
-      if (nextId === -1) {
-        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.all_done });
+      const qid = TERMINAL_QUESTIONS[key];
+      if (qid === undefined) return;
+      if (s.puzzlesAnswered[qid]) {
+        dispatch({ type: "OPEN_DIALOG", dialog: DIALOGS.terminal_solved });
         return;
       }
       playSfx("open");
-      dispatch({ type: "OPEN_PUZZLE", puzzleId: nextId });
+      dispatch({ type: "OPEN_PUZZLE", puzzleId: qid });
       return;
     }
     if (tile === 7) {
